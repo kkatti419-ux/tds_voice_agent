@@ -14,7 +14,6 @@ class VoiceScreen extends StatelessWidget {
       appBar: AppBar(title: const Text("Voice Agent")),
       body: Column(
         children: [
-
           Expanded(
             child: ListView.builder(
               itemCount: vm.messages.length,
@@ -28,8 +27,7 @@ class VoiceScreen extends StatelessWidget {
                   child: Container(
                     margin: const EdgeInsets.all(8),
                     padding: const EdgeInsets.all(12),
-                    color:
-                        msg.isUser ? Colors.blue : Colors.grey.shade300,
+                    color: msg.isUser ? Colors.blue : Colors.grey.shade300,
                     child: Text(msg.text),
                   ),
                 );
@@ -37,18 +35,26 @@ class VoiceScreen extends StatelessWidget {
             ),
           ),
 
-        GestureDetector(
-  onTapDown: (_) {
-    vm.startListening();
-  },
-  onTapUp: (_) {
-    vm.stopListening();
-  },
-  child: MicAnimation(
-    isListening: vm.isListening,
-  ),
-),
+          GestureDetector(
+            onTap: () {
+              if (vm.isListening) {
+                vm.stopListening();
+              } else {
+                vm.startListening();
+              }
+            },
+            child: MicAnimation(isListening: vm.isListening),
+          ),
 
+          // GestureDetector(
+          //   onTapDown: (_) {
+          //     vm.startListening();
+          //   },
+          //   onTapUp: (_) {
+          //     vm.stopListening();
+          //   },
+          //   child: MicAnimation(isListening: vm.isListening),
+          // ),
           const SizedBox(height: 40),
         ],
       ),

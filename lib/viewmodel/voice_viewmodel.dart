@@ -1,54 +1,114 @@
 import 'package:flutter/material.dart';
-import 'package:tds_voice_agent/service/audio_palyer_service.dart';
-import '../model/voice_message.dart';
-import '../service/audio_record_service.dart';
-import '../service/voice_service.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
+
+class Message {
+  final String text;
+  final bool isUser;
+
+  Message(this.text, this.isUser);
+}
 
 class VoiceViewModel extends ChangeNotifier {
-  final AudioRecordService _recordService = AudioRecordService();
-  final VoiceService _voiceService = VoiceService();
-  final AudioPlayerService _playerService = AudioPlayerService();
-
-  List<VoiceMessage> messages = [];
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  final FlutterTts _tts = FlutterTts();
 
   bool isListening = false;
+  List<Message> messages = [];
 
+  // START LISTENING
   Future<void> startListening() async {
-    isListening = true;
-    notifyListeners();
+    if (_speech.isListening) return;
 
-    await _recordService.startRecording();
-  }
+    bool available = await _speech.initialize();
 
-  Future<void> stopListening() async {
-    isListening = false;
-    notifyListeners();
+    if (available) {
+      isListening = true;
+      notifyListeners();
 
-    final path = await _recordService.stopRecording();
+      await _speech.listen(
+        onResult: (result) {
+          if (result.finalResult) {
+            String text = result.recognizedWords;
 
-    if (path != null) {
-      await sendAudio(path);
+            messages.add(Message(text, true));
+            _reply(text);
+          }
+
+          notifyListeners();
+        },
+      );
     }
   }
+  // Future<void> startListening() async {
+  //   // 🔥 IMPORTANT FIX
+  //   if (isListening) return;
 
-  Future<void> sendAudio(String path) async {
-    messages.add(
-      VoiceMessage(text: "Listening...", isUser: true),
-    );
+  //   bool available = await _speech.initialize();
 
+  //   if (available) {
+  //     isListening = true;
+  //     notifyListeners();
+
+  //     _speech.listen(
+  //       onResult: (result) {
+  //         if (result.finalResult) {
+  //           String text = result.recognizedWords;
+
+  //           messages.add(Message(text, true));
+  //           _reply(text);
+  //         }
+
+  //         notifyListeners();
+  //       },
+  //     );
+  //   }
+  // }
+  // Future<void> startListening() async {
+  //   bool available = await _speech.initialize();
+
+  //   if (available) {
+  //     isListening = true;
+  //     notifyListeners();
+
+  //     _speech.listen(
+  //       onResult: (result) {
+  //         if (result.finalResult) {
+  //           String text = result.recognizedWords;
+
+  //           messages.add(Message(text, true));
+
+  //           // OPTIONAL: Bot reply
+  //           _reply(text);
+  //         }
+
+  //         notifyListeners();
+  //       },
+  //     );
+  //   }
+  // }
+
+  // STOP LISTENING
+  void stopListening() {
+    if (!isListening) return;
+
+    _speech.stop();
+    isListening = false;
+    notifyListeners();
+  }
+  // void stopListening() {
+  //   _speech.stop();
+  //   isListening = false;
+  //   notifyListeners();
+  // }
+
+  // BOT REPLY + TTS
+  Future<void> _reply(String userText) async {
+    String reply = "You said: $userText";
+
+    messages.add(Message(reply, false));
     notifyListeners();
 
-    final response = await _voiceService.sendAudio(path);
-
-    final text = response["text"];
-    final audioUrl = response["audio_url"];
-
-    messages.add(
-      VoiceMessage(text: text, isUser: false),
-    );
-
-    notifyListeners();
-
-    await _playerService.play(audioUrl);
+    await _tts.speak(reply);
   }
 }
