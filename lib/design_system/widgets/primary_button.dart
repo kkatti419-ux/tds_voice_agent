@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:tds_voice_agent/core/utils/widgets/design_system/colors.dart';
+import 'package:tds_voice_agent/core/constants/app_colors.dart';
 
 class AppButton extends StatelessWidget {
   final String text;
