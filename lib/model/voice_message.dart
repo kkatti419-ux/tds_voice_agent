@@ -1,7 +1,7 @@
 class VoiceMessage {
-  final String text;
+  String text;
   final bool isUser;
-  final bool isPlaying;
+  bool isPlaying;
 
   VoiceMessage({
     required this.text,
