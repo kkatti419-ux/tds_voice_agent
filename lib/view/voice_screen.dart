@@ -14,6 +14,9 @@ class VoiceScreen extends StatelessWidget {
       appBar: AppBar(title: const Text("Voice Agent")),
       body: Column(
         children: [
+          const SizedBox(height: 16),
+          Text(vm.statusText),
+          const SizedBox(height: 12),
           Expanded(
             child: ListView.builder(
               itemCount: vm.messages.length,
@@ -36,14 +39,12 @@ class VoiceScreen extends StatelessWidget {
           ),
 
           GestureDetector(
-            onTap: () {
-              if (vm.isListening) {
-                vm.stopListening();
-              } else {
-                vm.startListening();
-              }
-            },
-            child: MicAnimation(isListening: vm.isListening),
+            onTap: () => vm.toggleListening(),
+            child: MicAnimation(
+              isListening: vm.isListening,
+              amplitudeDb: vm.amplitudeDb,
+              isAgentSpeaking: vm.isAgentSpeaking,
+            ),
           ),
 
           // GestureDetector(
