@@ -1,5 +1,6 @@
 import 'dart:collection';
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:universal_html/html.dart' as html;
@@ -36,12 +37,36 @@ class AudioPlayerService {
 
   Future<void> play(String url) {
     final completer = Completer<void>();
-    _queue.add(_QueueItem(url, completer));
+    _queue.add(_QueueItem.url(url, completer));
     if (_isPlaying) return completer.future;
 
     _isPlaying = true;
     _playLoop();
     return completer.future;
+  }
+
+  /// Plays raw bytes from the server (e.g. TTS binary frames). Web only.
+  Future<void> playBytes(Uint8List bytes) {
+    if (!kIsWeb) {
+      return Future<void>.value();
+    }
+    if (bytes.isEmpty) {
+      return Future<void>.value();
+    }
+    final completer = Completer<void>();
+    _queue.add(_QueueItem.bytes(bytes, completer));
+    if (_isPlaying) return completer.future;
+
+    _isPlaying = true;
+    _playLoop();
+    return completer.future;
+  }
+
+  /// Waits until the playback queue is drained (best-effort for streamed TTS).
+  Future<void> waitUntilPlaybackIdle() async {
+    while (_queue.isNotEmpty || _isPlaying) {
+      await Future<void>.delayed(const Duration(milliseconds: 24));
+    }
   }
 
   Future<void> _playLoop() async {
@@ -51,9 +76,15 @@ class AudioPlayerService {
 
         try {
           if (kIsWeb) {
-            await _playWeb(next.url);
+            if (next.bytes != null) {
+              await _playWebBytes(next.bytes!);
+            } else if (next.url != null) {
+              await _playWeb(next.url!);
+            }
           } else {
-            await _playNative(next.url);
+            if (next.url != null) {
+              await _playNative(next.url!);
+            }
           }
           if (!next.completer.isCompleted) next.completer.complete();
         } catch (e) {
@@ -92,6 +123,46 @@ class AudioPlayerService {
     await done.future;
   }
 
+  String _guessAudioMime(Uint8List b) {
+    if (b.length >= 4 &&
+        b[0] == 0x52 &&
+        b[1] == 0x49 &&
+        b[2] == 0x46 &&
+        b[3] == 0x46) {
+      return 'audio/wav';
+    }
+    return 'audio/mpeg';
+  }
+
+  Future<void> _playWebBytes(Uint8List bytes) async {
+    _webAudio?.pause();
+    final blob = html.Blob([bytes], _guessAudioMime(bytes));
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final audio = html.AudioElement(url);
+    _webAudio = audio;
+    final done = Completer<void>();
+
+    void completeSafe() {
+      if (!done.isCompleted) done.complete();
+      html.Url.revokeObjectUrl(url);
+    }
+
+    audio.onEnded.first.then((_) {
+      completeSafe();
+    });
+    audio.onError.first.then((_) {
+      completeSafe();
+    });
+
+    try {
+      await audio.play();
+    } catch (e) {
+      completeSafe();
+      rethrow;
+    }
+    await done.future;
+  }
+
   Future<void> _playNative(String url) async {
     final player = _player ??= FlutterSoundPlayer();
     if (!player.isOpen()) {
@@ -112,7 +183,10 @@ class AudioPlayerService {
 }
 
 class _QueueItem {
-  _QueueItem(this.url, this.completer);
-  final String url;
+  _QueueItem.url(this.url, this.completer) : bytes = null;
+  _QueueItem.bytes(this.bytes, this.completer) : url = null;
+
+  final String? url;
+  final Uint8List? bytes;
   final Completer<void> completer;
 }

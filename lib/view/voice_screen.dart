@@ -30,8 +30,7 @@ class VoiceScreen extends StatelessWidget {
                   child: Container(
                     margin: const EdgeInsets.all(8),
                     padding: const EdgeInsets.all(12),
-                    color:
-                        msg.isUser ? Colors.blue : Colors.grey.shade300,
+                    color: msg.isUser ? Colors.blue : Colors.grey.shade300,
                     child: Text(msg.text),
                   ),
                 );
@@ -48,6 +47,15 @@ class VoiceScreen extends StatelessWidget {
             ),
           ),
 
+          // GestureDetector(
+          //   onTapDown: (_) {
+          //     vm.startListening();
+          //   },
+          //   onTapUp: (_) {
+          //     vm.stopListening();
+          //   },
+          //   child: MicAnimation(isListening: vm.isListening),
+          // ),
           const SizedBox(height: 40),
         ],
       ),
