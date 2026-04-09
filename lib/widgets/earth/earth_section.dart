@@ -150,13 +150,12 @@
 //   }
 // }
 
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
 import 'package:tds_voice_agent/theme/app_typography.dart';
 import 'package:tds_voice_agent/widgets/cta_section.dart';
-import 'package:tds_voice_agent/widgets/earth_global_container.dart';
+import 'package:tds_voice_agent/widgets/earth/earth_global_container.dart';
 
 class EarthSection extends StatefulWidget {
   final List<LangItem> langPills;
@@ -205,29 +204,21 @@ class _EarthSectionState extends State<EarthSection>
 
   Color get titleColor => isDark ? Colors.white : Colors.black;
 
-  Color get subtitleColor =>
-      isDark ? Colors.white70 : Colors.black54;
+  Color get subtitleColor => isDark ? Colors.white70 : Colors.black54;
 
-  LinearGradient get accentGradient => const LinearGradient(
-        colors: [
-          Color(0xFF5B6CFF),
-          Color(0xFF8E44AD),
-        ],
-      );
+  LinearGradient get accentGradient =>
+      const LinearGradient(colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)]);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
       child: Column(
         children: [
           /// SECTION LABEL
           Text(
             "GLOBAL DELIVERY",
-            style: AppTypography.bodyMedium(
-              color: subtitleColor,
-            ).copyWith(
+            style: AppTypography.bodyMedium(color: subtitleColor).copyWith(
               fontSize: 12,
               letterSpacing: 1.5,
               fontWeight: FontWeight.w600,
@@ -247,14 +238,11 @@ class _EarthSectionState extends State<EarthSection>
                 color: titleColor,
               ),
               children: [
-                const TextSpan(
-                  text: "Built in Bangalore.\nDelivered across ",
-                ),
+                const TextSpan(text: "Built in Bangalore.\nDelivered across "),
 
                 WidgetSpan(
                   child: ShaderMask(
-                    shaderCallback: (b) =>
-                        accentGradient.createShader(b),
+                    shaderCallback: (b) => accentGradient.createShader(b),
                     child: Text(
                       "the world.",
                       style: GoogleFonts.playfairDisplay(
@@ -278,9 +266,7 @@ class _EarthSectionState extends State<EarthSection>
             child: Text(
               "Technodysis builds intelligent voice systems in Bangalore and deploys them globally across enterprises.",
               textAlign: TextAlign.center,
-              style: AppTypography.bodyMedium(
-                color: subtitleColor,
-              ),
+              style: AppTypography.bodyMedium(color: subtitleColor),
             ),
           ),
 

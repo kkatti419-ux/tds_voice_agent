@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tds_voice_agent/domain/entities/agni_content.dart';
-import 'package:tds_voice_agent/widgets/stat_card.dart';
+import 'package:tds_voice_agent/widgets/marquee/stat_card.dart';
 
 class StatsSection extends StatelessWidget {
   final List<StatItem> stats;

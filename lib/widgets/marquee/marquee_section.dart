@@ -1,19 +1,12 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'package:tds_voice_agent/theme/app_typography.dart';
-import 'package:tds_voice_agent/widgets/marquee_row.dart';
+import 'package:tds_voice_agent/widgets/marquee/marquee_row.dart';
 
 class MarqueeSection extends StatefulWidget {
   final List<String> items;
   final bool isDark;
 
-  const MarqueeSection({
-    super.key,
-    required this.items,
-    required this.isDark,
-  });
+  const MarqueeSection({super.key, required this.items, required this.isDark});
 
   @override
   State<MarqueeSection> createState() => _MarqueeSectionState();
@@ -39,11 +32,9 @@ class _MarqueeSectionState extends State<MarqueeSection>
     super.dispose();
   }
 
-  Color get textPrimary =>
-      widget.isDark ? Colors.white70 : Colors.black87;
+  Color get textPrimary => widget.isDark ? Colors.white70 : Colors.black87;
 
-  Color get textSecondary =>
-      widget.isDark ? Colors.white54 : Colors.black54;
+  Color get textSecondary => widget.isDark ? Colors.white54 : Colors.black54;
 
   @override
   Widget build(BuildContext context) {
@@ -109,8 +100,9 @@ class _MarqueeSectionState extends State<MarqueeSection>
                   return MarqueeRow(
                     items: doubled,
                     progress: _marqueeController.value,
-                    textStyle: 
-                    AppTypography.displaySmall(color: textPrimary).copyWith(),
+                    textStyle: AppTypography.displaySmall(
+                      color: textPrimary,
+                    ).copyWith(),
                     dividerColor: borderColor,
                   );
                 },

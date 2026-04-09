@@ -37,7 +37,7 @@
 //             child: Container(
 //               height: 2,
 //               decoration: const BoxDecoration(
-             
+
 //                 borderRadius: BorderRadius.only(
 //                   topLeft: Radius.circular(32),
 //                   topRight: Radius.circular(32),
@@ -56,14 +56,14 @@
 //                   shaderCallback: (bounds) => gradText.createShader(bounds),
 //                   child: Text(
 //                     value,
-//                     style: 
+//                     style:
 //                     AppTypography.displaySmall(color: Colors.white),
 //                   ),
 //                 ),
 //                 const SizedBox(height: 10),
 //                 Text(
 //                   description,
-//                   style: 
+//                   style:
 //                   AppTypography.bodyMedium(color: text3Color),
 //                 ),
 //               ],
@@ -76,6 +76,7 @@
 // }
 
 import 'package:flutter/material.dart';
+import 'package:tds_voice_agent/constants/colors.dart';
 import 'package:tds_voice_agent/theme/app_typography.dart';
 
 class StatCard extends StatelessWidget {
@@ -90,11 +91,10 @@ class StatCard extends StatelessWidget {
     required this.isDark,
   });
 
-  Color get textSecondary =>
-      isDark ? Colors.white60 : Colors.black54;
+  Color get textSecondary => isDark ? Colors.white60 : Colors.black54;
 
   Color get cardColor =>
-      isDark ? Colors.white.withOpacity(0.04) : Colors.white;
+      isDark ? AgniColors.darkBg : AgniColors.lightBg.withOpacity(0.8);
 
   final LinearGradient gradText = const LinearGradient(
     colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)],
@@ -103,16 +103,11 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 20,
-        horizontal: 16,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.15),
-        ),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
         boxShadow: [
           if (!isDark)
             BoxShadow(
@@ -127,28 +122,22 @@ class StatCard extends StatelessWidget {
         children: [
           /// Gradient animated number
           ShaderMask(
-  shaderCallback: (bounds) =>
-      const LinearGradient(
-        colors: [
-          Color(0xFF5B6CFF),
-          Color(0xFF7B61FF),
-          Color(0xFF8E44AD),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ).createShader(bounds),
-  child: Text(
-    value,
-    textAlign: TextAlign.center,
-    style: AppTypography.displaySmall(
-      color: Colors.white,
-    ).copyWith(
-      fontSize: 36,
-      fontWeight: FontWeight.w800,
-      letterSpacing: 0.5,
-    ),
-  ),
-),
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [Color(0xFF5B6CFF), Color(0xFF7B61FF), Color(0xFF8E44AD)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ).createShader(bounds),
+            child: Text(
+              value,
+              textAlign: TextAlign.center,
+              style: AppTypography.displaySmall(color: Colors.white).copyWith(
+                fontSize: 36,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+
           // ShaderMask(
           //   shaderCallback: (bounds) =>
           //       gradText.createShader(bounds),
@@ -163,7 +152,6 @@ class StatCard extends StatelessWidget {
           //     ),
           //   ),
           // ),
-
           const SizedBox(height: 6),
 
           /// Description text
@@ -172,10 +160,7 @@ class StatCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: AppTypography.bodyMedium(
               color: textSecondary,
-            ).copyWith(
-              fontSize: 20,
-              letterSpacing: 0.3,
-            ),
+            ).copyWith(fontSize: 20, letterSpacing: 0.3),
           ),
         ],
       ),

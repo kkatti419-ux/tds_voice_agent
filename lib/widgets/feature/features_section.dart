@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tds_voice_agent/domain/entities/agni_content.dart';
-import 'package:tds_voice_agent/widgets/feature_card.dart';
+import 'package:tds_voice_agent/widgets/feature/feature_card.dart';
 
 class FeaturesSection extends StatelessWidget {
   final List<FeatureItem> features;
