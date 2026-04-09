@@ -64,7 +64,7 @@ class VoiceViewModel extends ChangeNotifier {
   /// Web: waiting for `ai_done` + playback for the current utterance turn.
   bool _awaitingWebTurn = false;
 
-  static const Duration _silenceDuration = Duration(seconds: 10);
+  static const Duration _silenceDuration = Duration(seconds: 3);
   static const double _speechThresholdDb = -35.0;
   static const Duration _bargeInHold = Duration(milliseconds: 280);
 

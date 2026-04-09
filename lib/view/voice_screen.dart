@@ -262,55 +262,75 @@ class _AgniLandingPageState extends State<AgniLandingPage>
         children: [
           // Background layer
           _buildBackground(),
-          // Content
-          NotificationListener<ScrollNotification>(
-            onNotification: (n) {
-              _checkReveal();
-              return false;
-            },
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              child: Column(
-                children: [
-                  ResponsiveNavbar(
-                    isDark: isDark,
-                    navItems: content.navItems,
-                    onToggleTheme: widget.onToggleTheme,
-                    onMenuTap: () =>
-                        _scaffoldKey.currentState?.openDrawer(),
-                  ),
-                  // _buildHero(),
-                  HeroSection(content: content, isDark: isDark),
-                  // _buildMarquee(),
-                  MarqueeSection(items: content.marqueeItems, isDark: isDark),
-                  // _buildStats(),
-                  StatsSection(
-                    isDark: false,
-                    stats: [
-                      StatItem(value: "2,100+", description: "Businesses"),
-                      StatItem(value: "12+", description: "Countries"),
-                      StatItem(value: "98%", description: "Success Rate"),
-                    ],
-                  ),
-                 
-                  ComparisonsSection(
-                    comparisons: content.comparisons,
-                    isDark: isDark,
-                    textColor: textColor,
-                    text2Color: text2Color,
-                    text3Color: text3Color,
-                  ),
-               
-                  FeaturesSection(features: content.features, isDark: isDark),
-
-                  EarthSection(langPills: [], isDark: isDark),
-
-                  // CTABanner(isDark: isDark),
-                  // _buildFooter(),
-                  FooterSection(isDark: isDark),
-                ],
+          // Content: fixed top bar, scroll the rest
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SafeArea(
+                bottom: false,
+                child: ResponsiveNavbar(
+                  isDark: isDark,
+                  navItems: content.navItems,
+                  onToggleTheme: widget.onToggleTheme,
+                  onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+                ),
               ),
-            ),
+              Expanded(
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (n) {
+                    _checkReveal();
+                    return false;
+                  },
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    child: Column(
+                      children: [
+                        // _buildHero(),
+                        HeroSection(content: content, isDark: isDark),
+                        // _buildMarquee(),
+                        MarqueeSection(
+                          items: content.marqueeItems,
+                          isDark: isDark,
+                        ),
+                        // _buildStats(),
+                        StatsSection(
+                          isDark: false,
+                          stats: [
+                            StatItem(
+                              value: "2,100+",
+                              description: "Businesses",
+                            ),
+                            StatItem(
+                              value: "12+",
+                              description: "Countries",
+                            ),
+                            StatItem(
+                              value: "98%",
+                              description: "Success Rate",
+                            ),
+                          ],
+                        ),
+                        ComparisonsSection(
+                          comparisons: content.comparisons,
+                          isDark: isDark,
+                          textColor: textColor,
+                          text2Color: text2Color,
+                          text3Color: text3Color,
+                        ),
+                        FeaturesSection(
+                          features: content.features,
+                          isDark: isDark,
+                        ),
+                        EarthSection(langPills: [], isDark: isDark),
+                        // CTABanner(isDark: isDark),
+                        // _buildFooter(),
+                        FooterSection(isDark: isDark),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
