@@ -32,7 +32,9 @@ class AudioWeb {
     _chunkIndex = 0;
     _totalPcmBytes = 0;
     _decodeErrors = 0;
-    _log('start() — JS capture will call SocketManager.sendAudio with int16 PCM chunks');
+    _log(
+      'start() — JS capture will call SocketManager.sendAudio with int16 PCM chunks',
+    );
 
     final onPcmJs = ((String dataJson) {
       if (dataJson.isEmpty) return;

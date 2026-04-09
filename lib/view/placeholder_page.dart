@@ -15,6 +15,7 @@ class PlaceholderPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(title),
         centerTitle: true,
+        automaticallyImplyLeading: false, // 🔥 THIS REMOVES BACK ARROW
       ),
       body: Center(
         child: Padding(
