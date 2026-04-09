@@ -115,7 +115,7 @@ class _HeroSectionState extends State<HeroSection>
                 if (isMobile) {
                   return Column(
                     children: [
-                      _buildHeroBadge(),
+                      buildBadge(),
                       const SizedBox(height: 16),
                       _buildLangTicker(),
                       const SizedBox(height: 24),
@@ -160,7 +160,7 @@ class _HeroSectionState extends State<HeroSection>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildHeroBadge(),
+                            buildBadge(),
                             const SizedBox(height: 16),
                             _buildLangTicker(alignLeft: true),
                             const SizedBox(height: 24),
@@ -213,12 +213,66 @@ class _HeroSectionState extends State<HeroSection>
   }
 
   Widget _buildDescription({bool alignLeft = false}) {
-    return Text(
-      'We build agentic AI and automation that transforms Healthcare, Banking, Insurance, Telecom, and Retail — with measurable ROI from day one.',
-      textAlign: alignLeft ? TextAlign.left : TextAlign.center,
-      style: TextStyle(fontSize: 16, color: text3Color, height: 1.6),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: RichText(
+        textAlign: alignLeft ? TextAlign.left : TextAlign.center,
+        text: TextSpan(
+          style: TextStyle(fontSize: 16, height: 1.7, color: text3Color),
+          children: [
+            const TextSpan(text: 'We build '),
+
+            /// 🔥 Highlight
+            WidgetSpan(
+              child: ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)],
+                ).createShader(bounds),
+                child: const Text(
+                  'agentic AI',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+
+            const TextSpan(text: ' and automation that transforms '),
+
+            /// 🔥 Industries highlight
+            WidgetSpan(
+              child: ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Color(0xFF4EB3D3), Color(0xFF74C69D)],
+                ).createShader(bounds),
+                child: const Text(
+                  'Healthcare, Banking, Insurance, Telecom, and Retail',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+
+            const TextSpan(text: ' — with measurable ROI from day one.'),
+          ],
+        ),
+      ),
     );
   }
+  // Widget _buildDescription({bool alignLeft = false}) {
+  //   return Text(
+  //     'We build agentic AI and automation that transforms Healthcare, Banking, Insurance, Telecom, and Retail — with measurable ROI from day one.',
+  //     textAlign: alignLeft ? TextAlign.left : TextAlign.center,
+  //     style: TextStyle(fontSize: 16, color: text3Color, height: 1.6),
+  //   );
+  // }
 
   Widget _buildButtons({bool isMobile = false}) {
     if (isMobile) {
@@ -241,39 +295,62 @@ class _HeroSectionState extends State<HeroSection>
     );
   }
 
-  Widget _buildHeroBadge() {
+  // Widget _buildHeroBadge() {
+  //   return buildBadge();
+  // }
+
+  Widget buildBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(50),
+
+        /// 🌫️ Glass effect
         color: isDark
-            ? AgniColors.oceanBright.withOpacity(0.08)
-            : Colors.white.withOpacity(0.70),
-        borderRadius: BorderRadius.circular(100),
+            ? const Color(0xFF0E2D4A).withOpacity(0.35)
+            : Colors.white.withOpacity(0.6),
+
+        /// 🧊 Border
         border: Border.all(
           color: isDark
               ? AgniColors.oceanBright.withOpacity(0.25)
-              : AgniColors.oceanMid.withOpacity(0.16),
+              : AgniColors.oceanMid.withOpacity(0.2),
         ),
-        boxShadow: isDark
-            ? [
-                BoxShadow(
-                  color: AgniColors.oceanBright.withOpacity(0.10),
-                  blurRadius: 20,
-                ),
-              ]
-            : null,
+
+        /// ✨ Glow
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? AgniColors.oceanBright.withOpacity(0.15)
+                : AgniColors.oceanMid.withOpacity(0.1),
+            blurRadius: 16,
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          /// 🔵 Animated Pulse Dot
           _buildPulseDot(),
-          const SizedBox(width: 8),
-          Text(
-            'Founded in 2020 · Bangalore HQ',
-            style: TextStyle(
-              fontSize: 12.8,
-              fontWeight: FontWeight.w500,
-              color: isDark ? AgniColors.oceanBright : AgniColors.oceanMid,
+
+          const SizedBox(width: 10),
+
+          /// 🌈 Gradient Text
+          ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              colors: isDark
+                  ? [AgniColors.oceanBright, AgniColors.forestBright]
+                  : [AgniColors.oceanMid, AgniColors.forestMid],
+            ).createShader(bounds),
+            child: const Text(
+              'Founded in 2020 · Bangalore HQ',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.white, // required for shader
+                letterSpacing: 0.3,
+              ),
             ),
           ),
         ],
