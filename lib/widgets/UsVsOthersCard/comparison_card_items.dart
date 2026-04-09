@@ -33,14 +33,14 @@ class ComparisonCard extends StatelessWidget {
             ? (isDark ? const Color(0xFF071828) : AgniColors.lightOceanDeep)
             : (isDark
                   ? const Color(0xFF08141E).withOpacity(0.65)
-                  : Colors.white.withOpacity(0.55)),
+                  : AgniColors.white.withOpacity(0.55)),
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
           color: isOurs
               ? AgniColors.oceanBright.withOpacity(0.22)
               : (isDark
-                    ? Colors.white.withOpacity(0.05)
-                    : Colors.white.withOpacity(0.80)),
+                    ? AgniColors.white.withOpacity(0.05)
+                    : AgniColors.white.withOpacity(0.80)),
         ),
         boxShadow: isOurs
             ? [
@@ -70,7 +70,7 @@ class ComparisonCard extends StatelessWidget {
             radius: 1.1,
             colors: [
               AgniColors.oceanBright.withOpacity(0.18),
-              Colors.transparent,
+              AgniColors.transparent,
             ],
           ),
         ),
@@ -99,14 +99,14 @@ class ComparisonCard extends StatelessWidget {
         color: isOurs
             ? null
             : (isDark
-                  ? Colors.white.withOpacity(0.05)
+                  ? AgniColors.white.withOpacity(0.05)
                   : AgniColors.oceanMid.withOpacity(0.08)),
         borderRadius: BorderRadius.circular(100),
         border: isOurs
             ? null
             : Border.all(
                 color: isDark
-                    ? Colors.white.withOpacity(0.10)
+                    ? AgniColors.white.withOpacity(0.10)
                     : AgniColors.oceanMid.withOpacity(0.12),
               ),
         boxShadow: isOurs
@@ -124,7 +124,7 @@ class ComparisonCard extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.06 * 12,
-          color: isOurs ? Colors.white : text3Color,
+          color: isOurs ? AgniColors.white : text3Color,
         ),
       ),
     );
@@ -137,7 +137,7 @@ class ComparisonCard extends StatelessWidget {
         fontSize: 24.8,
         fontWeight: FontWeight.w700,
         height: 1.25,
-        color: isOurs ? Colors.white.withOpacity(0.90) : textColor,
+        color: isOurs ? AgniColors.white.withOpacity(0.90) : textColor,
       ),
     );
   }
@@ -187,7 +187,7 @@ class ComparisonCard extends StatelessWidget {
         fontSize: 15.2,
         height: 1.5,
         color: isOurs
-            ? Colors.white.withOpacity(0.85)
+            ? AgniColors.white.withOpacity(0.85)
             : (isDark ? text2Color.withOpacity(0.75) : AgniColors.lightText2),
       ),
     );

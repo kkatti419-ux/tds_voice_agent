@@ -126,7 +126,7 @@ class ResponsiveNavbar extends StatelessWidget {
       ),
       child: Text(
         'Contact sales →',
-        style: AppTypography.ctaCompact(color: Colors.white),
+        style: AppTypography.ctaCompact(color: AgniColors.white),
       ),
     );
 
@@ -161,6 +161,6 @@ class ResponsiveNavbar extends StatelessWidget {
   }
 
   Color _text2Color(BuildContext context) {
-    return isDark ? Colors.white70 : Colors.black87;
+    return isDark ? AgniColors.white70 : AgniColors.black87;
   }
 }

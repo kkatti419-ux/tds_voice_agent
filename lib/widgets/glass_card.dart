@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tds_voice_agent/core/agni_colors.dart';
 
 class GlassCard extends StatefulWidget {
   final bool isDark;
@@ -28,9 +29,11 @@ class _GlassCardState extends State<GlassCard> {
         duration: const Duration(milliseconds: 300),
         padding: widget.padding,
         decoration: BoxDecoration(
-          color: widget.isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+          color: widget.isDark
+              ? AgniColors.white.withOpacity(0.05)
+              : AgniColors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          border: Border.all(color: AgniColors.neutralGrey.withOpacity(0.2)),
         ),
         child: widget.child,
       ),

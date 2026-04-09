@@ -278,10 +278,10 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
 
   bool get isDark => widget.isDark;
 
-  Color get bg => isDark ?  Colors.black : Colors.grey;
+  Color get bg => isDark ? AgniColors.black : AgniColors.neutralGrey;
 
   Color get border =>
-      isDark ? Colors.white12 : Colors.black12;
+      isDark ? AgniColors.white12 : AgniColors.black12;
 
   @override
   Widget build(BuildContext context) {
@@ -300,7 +300,7 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
               BoxShadow(
                 blurRadius: 60,
                 offset: const Offset(0, 30),
-                color: Colors.black.withOpacity(.18),
+                color: AgniColors.black.withOpacity(.18),
               )
             ],
           ),
@@ -313,8 +313,8 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
                 vm.statusText,
                 style: AppTypography.bodyMedium(
                   color: isDark
-                      ? Colors.white60
-                      : Colors.black54,
+                      ? AgniColors.white60
+                      : AgniColors.black54,
                 ),
               ),
 
@@ -366,8 +366,8 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isDark
-                      ? Colors.white12
-                      : Colors.black12,
+                      ? AgniColors.white12
+                      : AgniColors.black12,
                   width: 1.4,
                 ),
               ),
@@ -399,7 +399,7 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: border),
-        color: Colors.green
+        color: AgniColors.forestLight
         // isDark ? const Color(0xFF08162A) : const Color(0xFFEEF6F9),
       ),
       child: Column(
@@ -408,8 +408,8 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
             "Pricing",
             style: AppTypography.bodyMedium(
               color: isDark
-                  ? Colors.white70
-                  : Colors.black54,
+                  ? AgniColors.white70
+                  : AgniColors.black54,
             ),
           ),
           const SizedBox(height: 4),
@@ -417,16 +417,16 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
             "₹2 / min",
             style: AppTypography.displaySmall(
               color: isDark
-                  ? Colors.white
-                  : Colors.black,
+                  ? AgniColors.white
+                  : AgniColors.black,
             ).copyWith(fontSize: 22),
           ),
           Text(
             "AI Voice + Automation",
             style: AppTypography.bodyMedium(
               color: isDark
-                  ? Colors.white60
-                  : Colors.black45,
+                  ? AgniColors.white60
+                  : AgniColors.black45,
             ),
           ),
         ],
@@ -449,15 +449,15 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           color: isDark
-              ? Colors.white
-              : Colors.black,
+              ? AgniColors.white
+              : AgniColors.black,
         ),
         child: Text(
           muted ? "Tap to speak" : "Mute mic",
           style: TextStyle(
             color: isDark
-                ? Colors.black
-                : Colors.white,
+                ? AgniColors.black
+                : AgniColors.white,
             fontWeight: FontWeight.w600,
           ),
         ),

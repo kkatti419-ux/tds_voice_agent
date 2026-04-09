@@ -202,9 +202,10 @@ class _EarthSectionState extends State<EarthSection>
 
   bool get isDark => widget.isDark;
 
-  Color get titleColor => isDark ? Colors.white : Colors.black;
+  Color get titleColor => isDark ? AgniColors.white : AgniColors.black;
 
-  Color get subtitleColor => isDark ? Colors.white70 : Colors.black54;
+  Color get subtitleColor =>
+      isDark ? AgniColors.white70 : AgniColors.black54;
 
   LinearGradient get accentGradient =>
       const LinearGradient(colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)]);
@@ -241,7 +242,7 @@ class _EarthSectionState extends State<EarthSection>
                 const TextSpan(text: "Built in Bangalore.\nDelivered across "),
 
                 WidgetSpan(
-                  child: ShaderMask(
+                    child: ShaderMask(
                     shaderCallback: (b) => accentGradient.createShader(b),
                     child: Text(
                       "the world.",
@@ -249,7 +250,7 @@ class _EarthSectionState extends State<EarthSection>
                         fontSize: 38,
                         fontWeight: FontWeight.w900,
                         fontStyle: FontStyle.italic,
-                        color: Colors.white,
+                        color: AgniColors.white,
                       ),
                     ),
                   ),

@@ -217,7 +217,7 @@ class _HeroSectionState extends State<HeroSection>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: AgniColors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
       ),
       child: RichText(
@@ -237,7 +237,7 @@ class _HeroSectionState extends State<HeroSection>
                   'agentic AI',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AgniColors.white,
                   ),
                 ),
               ),
@@ -255,7 +255,7 @@ class _HeroSectionState extends State<HeroSection>
                   'Healthcare, Banking, Insurance, Telecom, and Retail',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AgniColors.white,
                   ),
                 ),
               ),
@@ -314,7 +314,7 @@ class _HeroSectionState extends State<HeroSection>
         /// 🌫️ Glass effect
         color: isDark
             ? const Color(0xFF0E2D4A).withOpacity(0.35)
-            : Colors.white.withOpacity(0.6),
+            : AgniColors.white.withOpacity(0.6),
 
         /// 🧊 Border
         border: Border.all(
@@ -354,7 +354,7 @@ class _HeroSectionState extends State<HeroSection>
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Colors.white, // required for shader
+                color: AgniColors.white, // required for shader
                 letterSpacing: 0.3,
               ),
             ),
@@ -422,7 +422,7 @@ class _HeroSectionState extends State<HeroSection>
                 decoration: BoxDecoration(
                   color: isDark
                       ? const Color(0xFF0E2D4A).withOpacity(0.60)
-                      : Colors.white.withOpacity(0.68),
+                      : AgniColors.white.withOpacity(0.68),
                   borderRadius: BorderRadius.circular(100),
                   border: Border.all(
                     color: isDark
@@ -486,7 +486,7 @@ class _HeroSectionState extends State<HeroSection>
                   fontStyle: FontStyle.italic,
                   height: 1.06,
                   letterSpacing: -2.16,
-                  color: Colors.white,
+                  color: AgniColors.white,
                 ),
               ),
             ),
@@ -564,7 +564,7 @@ class _HeroSectionState extends State<HeroSection>
                 shape: BoxShape.circle,
                 color: isDark
                     ? const Color(0xFF0E2D4A).withOpacity(0.65)
-                    : Colors.white.withOpacity(0.82),
+                    : AgniColors.white.withOpacity(0.82),
                 border: Border.all(
                   color: isDark
                       ? AgniColors.oceanBright.withOpacity(0.30)
@@ -606,12 +606,12 @@ class _HeroSectionState extends State<HeroSection>
             decoration: BoxDecoration(
               color: isDark
                   ? const Color(0xFF08162A).withOpacity(0.88)
-                  : Colors.white.withOpacity(0.88),
+                  : AgniColors.white.withOpacity(0.88),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isDark
                     ? AgniColors.oceanBright.withOpacity(0.25)
-                    : Colors.white.withOpacity(0.95),
+                    : AgniColors.white.withOpacity(0.95),
               ),
               boxShadow: [
                 BoxShadow(
@@ -634,7 +634,7 @@ class _HeroSectionState extends State<HeroSection>
                     style: const TextStyle(
                       fontSize: 17.6,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: AgniColors.white,
                     ),
                   ),
                 ),
@@ -675,7 +675,7 @@ class _HeroSectionState extends State<HeroSection>
       child: Text(
         label,
         style: TextStyle(
-          color: Colors.white,
+                      color: AgniColors.white,
           fontSize: small ? 14 : 16,
           fontWeight: FontWeight.w600,
         ),
@@ -685,7 +685,7 @@ class _HeroSectionState extends State<HeroSection>
     if (onTap == null) return child;
 
     return Material(
-      color: Colors.transparent,
+      color: AgniColors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(100),
@@ -701,7 +701,7 @@ class _HeroSectionState extends State<HeroSection>
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF0E2D4A).withOpacity(0.50)
-            : Colors.white.withOpacity(0.65),
+            : AgniColors.white.withOpacity(0.65),
         borderRadius: BorderRadius.circular(100),
         border: Border.all(
           color: isDark
@@ -723,7 +723,7 @@ class _HeroSectionState extends State<HeroSection>
     if (onTap == null) return child;
 
     return Material(
-      color: Colors.transparent,
+      color: AgniColors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(100),

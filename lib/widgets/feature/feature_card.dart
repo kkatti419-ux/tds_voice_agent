@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tds_voice_agent/core/agni_colors.dart';
 import 'package:tds_voice_agent/domain/entities/agni_content.dart';
 
 class FeatureCard extends StatelessWidget {
@@ -8,17 +9,19 @@ class FeatureCard extends StatelessWidget {
 
   const FeatureCard({super.key, required this.item, required this.isDark});
 
-  Color get textColor => isDark ? Colors.white : Colors.black;
-  Color get text3Color => isDark ? Colors.white60 : Colors.black54;
+  Color get textColor => isDark ? AgniColors.white : AgniColors.black;
+  Color get text3Color => isDark ? AgniColors.white60 : AgniColors.black54;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+        color: isDark
+            ? AgniColors.white.withOpacity(0.05)
+            : AgniColors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: AgniColors.neutralGrey.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,12 +34,12 @@ class FeatureCard extends StatelessWidget {
               gradient: LinearGradient(
                 colors: isDark
                     ? [
-                        Colors.blue.withOpacity(0.12),
-                        Colors.green.withOpacity(0.10),
+                        AgniColors.oceanBright.withOpacity(0.12),
+                        AgniColors.forestBright.withOpacity(0.10),
                       ]
                     : [
-                        Colors.blue.withOpacity(0.10),
-                        Colors.green.withOpacity(0.10),
+                        AgniColors.oceanBright.withOpacity(0.10),
+                        AgniColors.forestBright.withOpacity(0.10),
                       ],
               ),
               borderRadius: BorderRadius.circular(12),
@@ -74,7 +77,7 @@ class FeatureCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Colors.green,
+              color: AgniColors.forestMid,
             ),
           ),
         ],

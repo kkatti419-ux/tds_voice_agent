@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tds_voice_agent/core/agni_colors.dart';
 import 'package:tds_voice_agent/theme/app_typography.dart';
 import 'package:tds_voice_agent/widgets/marquee/marquee_row.dart';
 
@@ -32,9 +33,9 @@ class _MarqueeSectionState extends State<MarqueeSection>
     super.dispose();
   }
 
-  Color get textPrimary => widget.isDark ? Colors.white70 : Colors.black87;
+  Color get textPrimary => widget.isDark ? AgniColors.white70 : AgniColors.black87;
 
-  Color get textSecondary => widget.isDark ? Colors.white54 : Colors.black54;
+  Color get textSecondary => widget.isDark ? AgniColors.white54 : AgniColors.black54;
 
   @override
   Widget build(BuildContext context) {
@@ -46,12 +47,12 @@ class _MarqueeSectionState extends State<MarqueeSection>
     final doubled = [...safeItems, ...safeItems];
 
     final borderColor = widget.isDark
-        ? Colors.blue.withOpacity(0.15)
+        ? AgniColors.oceanBright.withOpacity(0.15)
         : const Color(0xFF1A4A6B).withOpacity(0.10);
 
     final backgroundColor = widget.isDark
         ? const Color(0xFF050F20).withOpacity(0.65)
-        : Colors.white.withOpacity(0.65);
+        : AgniColors.white.withOpacity(0.65);
 
     return Container(
       width: double.infinity,
@@ -81,10 +82,10 @@ class _MarqueeSectionState extends State<MarqueeSection>
             shaderCallback: (rect) {
               return LinearGradient(
                 colors: [
-                  Colors.transparent,
-                  Colors.black,
-                  Colors.black,
-                  Colors.transparent,
+                  AgniColors.transparent,
+                  AgniColors.black,
+                  AgniColors.black,
+                  AgniColors.transparent,
                 ],
                 stops: const [0.0, 0.08, 0.92, 1.0],
                 begin: Alignment.centerLeft,

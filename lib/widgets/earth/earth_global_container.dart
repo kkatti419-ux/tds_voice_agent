@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:tds_voice_agent/core/agni_colors.dart';
 
 class EarthGlobePainter extends CustomPainter {
   final double t; // 0..1 from AnimationController (globeController, 8s reverse)
@@ -44,7 +45,7 @@ class EarthGlobePainter extends CustomPainter {
       stop0: 0.0,
       stop1: 0.35,
       c0: const Color(0xFF7AB8D8),
-      c1: Colors.transparent,
+      c1: AgniColors.transparent,
     );
 
     // ── 4. Continent patch: radial(20% 70%, #74c69d → transparent 35%) ───
@@ -58,7 +59,7 @@ class EarthGlobePainter extends CustomPainter {
       stop0: 0.0,
       stop1: 0.35,
       c0: const Color(0xFF74C69D),
-      c1: Colors.transparent,
+      c1: AgniColors.transparent,
     );
 
     // ── 5. Continent patch: radial(68% 58%, #52b788 → #2d6a4f 25%, transp 55%) ─
@@ -74,7 +75,7 @@ class EarthGlobePainter extends CustomPainter {
       stop1: 0.55,
       c0: const Color(0xFF52B788),
       cMid: const Color(0xFF2D6A4F),
-      c1: Colors.transparent,
+      c1: AgniColors.transparent,
     );
 
     // ── 6. Continent patch: radial(32% 38%, #4eb3d3 → #2d7da8 25%, transp 55%) ─
@@ -90,7 +91,7 @@ class EarthGlobePainter extends CustomPainter {
       stop1: 0.55,
       c0: const Color(0xFF4EB3D3),
       cMid: const Color(0xFF2D7DA8),
-      c1: Colors.transparent,
+      c1: AgniColors.transparent,
     );
 
     // ── 7. ::before highlight: radial(28% 32%, rgba(255,255,255,.15) → transp 30%) ─
@@ -102,8 +103,8 @@ class EarthGlobePainter extends CustomPainter {
       cy: 0.32,
       stop0: 0.0,
       stop1: 0.30,
-      c0: Colors.white.withOpacity(0.15),
-      c1: Colors.transparent,
+      c0: AgniColors.white.withOpacity(0.15),
+      c1: AgniColors.transparent,
     );
 
     canvas.restore(); // end clip
@@ -119,7 +120,10 @@ class EarthGlobePainter extends CustomPainter {
       ..shader = RadialGradient(
         center: const Alignment(0.7, 0.75),
         radius: 0.9,
-        colors: [const Color(0xFF0A2342).withOpacity(0.40), Colors.transparent],
+        colors: [
+          AgniColors.lightOceanDeep.withOpacity(0.40),
+          AgniColors.transparent,
+        ],
       ).createShader(globeRect)
       ..blendMode = BlendMode.srcOver;
     canvas.drawOval(globeRect, darkInset);
@@ -129,7 +133,10 @@ class EarthGlobePainter extends CustomPainter {
       ..shader = RadialGradient(
         center: const Alignment(-0.5, -0.55),
         radius: 0.7,
-        colors: [Colors.white.withOpacity(0.08), Colors.transparent],
+        colors: [
+          AgniColors.white.withOpacity(0.08),
+          AgniColors.transparent,
+        ],
       ).createShader(globeRect);
     canvas.drawOval(globeRect, lightInset);
 

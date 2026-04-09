@@ -76,7 +76,7 @@
 // }
 
 import 'package:flutter/material.dart';
-import 'package:tds_voice_agent/constants/colors.dart';
+import 'package:tds_voice_agent/core/agni_colors.dart';
 import 'package:tds_voice_agent/theme/app_typography.dart';
 
 class StatCard extends StatelessWidget {
@@ -91,7 +91,7 @@ class StatCard extends StatelessWidget {
     required this.isDark,
   });
 
-  Color get textSecondary => isDark ? Colors.white60 : Colors.black54;
+  Color get textSecondary => isDark ? AgniColors.white60 : AgniColors.black54;
 
   Color get cardColor =>
       isDark ? AgniColors.darkBg : AgniColors.lightBg.withOpacity(0.8);
@@ -107,11 +107,11 @@ class StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        border: Border.all(color: AgniColors.neutralGrey.withOpacity(0.15)),
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: AgniColors.black.withOpacity(0.04),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -130,7 +130,7 @@ class StatCard extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.center,
-              style: AppTypography.displaySmall(color: Colors.white).copyWith(
+              style: AppTypography.displaySmall(color: AgniColors.white).copyWith(
                 fontSize: 36,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,

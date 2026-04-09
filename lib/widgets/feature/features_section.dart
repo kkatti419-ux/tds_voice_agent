@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tds_voice_agent/core/agni_colors.dart';
 import 'package:tds_voice_agent/domain/entities/agni_content.dart';
 import 'package:tds_voice_agent/widgets/feature/feature_card.dart';
 
@@ -13,8 +14,8 @@ class FeaturesSection extends StatelessWidget {
     required this.isDark,
   });
 
-  Color get textColor => isDark ? Colors.white : Colors.black;
-  Color get text3Color => isDark ? Colors.white60 : Colors.black54;
+  Color get textColor => isDark ? AgniColors.white : AgniColors.black;
+  Color get text3Color => isDark ? AgniColors.white60 : AgniColors.black54;
 
   @override
   Widget build(BuildContext context) {

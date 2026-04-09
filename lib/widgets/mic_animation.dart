@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tds_voice_agent/core/agni_colors.dart';
 
 class MicAnimation extends StatelessWidget {
   final bool isListening;
@@ -20,7 +21,8 @@ class MicAnimation extends StatelessWidget {
     final double size = active
         ? (80 + (level * 80))
         : 80;
-    final Color glowColor = isAgentSpeaking ? Colors.limeAccent : Colors.lime;
+    final Color glowColor =
+        isAgentSpeaking ? AgniColors.signalLimeAccent : AgniColors.signalLime;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 500),
@@ -28,11 +30,11 @@ class MicAnimation extends StatelessWidget {
       width: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: active ? glowColor.withOpacity(0.9) : Colors.grey,
+        color: active ? glowColor.withOpacity(0.9) : AgniColors.neutralGrey,
       ),
       child: Icon(
         Icons.mic,
-        color: Colors.white,
+        color: AgniColors.white,
         size: isAgentSpeaking ? 44 : 40,
       ),
     );

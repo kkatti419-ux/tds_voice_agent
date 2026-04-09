@@ -216,7 +216,7 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Material(
-                      color: Colors.transparent,
+                      color: AgniColors.transparent,
                       child: InkWell(
                         onTap: () {
                           Navigator.of(context).pop();
@@ -237,7 +237,7 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                           alignment: Alignment.center,
                           child: Text(
                             'Contact sales →',
-                            style: AppTypography.ctaCompact(color: Colors.white),
+                            style: AppTypography.ctaCompact(color: AgniColors.white),
                           ),
                         ),
                       ),

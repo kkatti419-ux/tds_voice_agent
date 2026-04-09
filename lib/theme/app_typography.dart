@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 ///
 /// Usage:
 /// ```dart
-/// Text('Hello', style: AppTypography.titleLarge(color: Colors.white));
+/// Text('Hello', style: AppTypography.titleLarge(color: …));
 /// Text('Body', style: Theme.of(context).textTheme.bodyMedium);
 /// ```
 ///

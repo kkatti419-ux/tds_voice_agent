@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tds_voice_agent/core/agni_colors.dart';
 import 'package:tds_voice_agent/routing/app_routes.dart';
 
 class FooterSection extends StatelessWidget {
@@ -14,7 +15,7 @@ class FooterSection extends StatelessWidget {
     this.onOpenRoute,
   });
 
-  Color get text3Color => isDark ? Colors.white60 : Colors.black54;
+  Color get text3Color => isDark ? AgniColors.white60 : AgniColors.black54;
 
   Gradient get gradText =>
       const LinearGradient(colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)]);
@@ -36,12 +37,10 @@ class FooterSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF030A16).withOpacity(0.70)
-            : Colors.white.withOpacity(0.42),
+            : AgniColors.white.withOpacity(0.42),
         border: Border(
           top: BorderSide(
-            color: isDark
-                ? Colors.blue.withOpacity(0.12)
-                : Colors.blue.withOpacity(0.12),
+            color: AgniColors.oceanBright.withOpacity(0.12),
           ),
         ),
       ),
@@ -127,7 +126,7 @@ class FooterSection extends StatelessWidget {
         style: GoogleFonts.playfairDisplay(
           fontSize: 20,
           fontWeight: FontWeight.w900,
-          color: Colors.white,
+          color: AgniColors.white,
         ),
       ),
     );
