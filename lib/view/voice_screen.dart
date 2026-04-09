@@ -13,7 +13,7 @@ import 'package:tds_voice_agent/widgets/background_painters.dart';
 import 'package:tds_voice_agent/widgets/stats/stats_section.dart';
 
 import '../core/agni_colors.dart';
-import '../domain/entities/agni_content.dart';
+import 'package:tds_voice_agent/model/agni_content.dart';
 import '../theme/app_typography.dart';
 
 class VoiceScreen extends StatelessWidget {

@@ -1,7 +1,11 @@
+/// Landing / marketing content models (stats, features, comparisons, hero meta).
+/// Single source of truth for the Technodysis home experience.
+
 class StatItem {
   final String value;
   final String description;
-  const StatItem(this.value, this.description);
+
+  const StatItem({required this.value, required this.description});
 }
 
 class FeatureItem {
@@ -9,6 +13,7 @@ class FeatureItem {
   final String title;
   final String description;
   final String stat;
+
   const FeatureItem(this.icon, this.title, this.description, this.stat);
 }
 
@@ -17,6 +22,7 @@ class ComparisonCardData {
   final String badge;
   final String headline;
   final List<String> items;
+
   const ComparisonCardData({
     required this.isOurs,
     required this.badge,
@@ -27,7 +33,10 @@ class ComparisonCardData {
 
 class LangPill {
   final String label;
-  final String type; // '', 'ocean', 'forest'
+
+  /// '', 'ocean', 'forest'
+  final String type;
+
   const LangPill(this.label, this.type);
 }
 
@@ -35,6 +44,7 @@ class FloatingCardData {
   final String stat;
   final String label;
   final double delayFactor;
+
   const FloatingCardData(this.stat, this.label, this.delayFactor);
 }
 

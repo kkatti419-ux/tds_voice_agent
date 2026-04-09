@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
-import 'package:tds_voice_agent/domain/entities/agni_content.dart';
+import 'package:tds_voice_agent/model/agni_content.dart';
 import 'package:tds_voice_agent/routing/app_routes.dart';
 import 'package:tds_voice_agent/widgets/background_painters.dart';
 import 'package:tds_voice_agent/widgets/chatbot%20card/phone_mockup_widget.dart';

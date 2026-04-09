@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tds_voice_agent/domain/entities/agni_content.dart';
+import 'package:tds_voice_agent/model/agni_content.dart';
 import 'package:tds_voice_agent/widgets/UsVsOthersCard/comparison_card_items.dart';
 
 class ComparisonsSection extends StatelessWidget {
