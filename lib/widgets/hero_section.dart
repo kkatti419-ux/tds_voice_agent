@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
 import 'package:tds_voice_agent/domain/entities/agni_content.dart';
+import 'package:tds_voice_agent/routing/app_routes.dart';
 import 'package:tds_voice_agent/widgets/background_painters.dart';
-import 'package:tds_voice_agent/widgets/3/phone_mockup_widget.dart';
+import 'package:tds_voice_agent/widgets/chatbot%20card/phone_mockup_widget.dart';
 
 class HeroSection extends StatefulWidget {
   final AgniContent content;
@@ -275,22 +276,27 @@ class _HeroSectionState extends State<HeroSection>
   // }
 
   Widget _buildButtons({bool isMobile = false}) {
+    void openExpert() =>
+        Navigator.of(context).pushNamed(AppRoutes.talkToExpert);
+    void openDemo() =>
+        Navigator.of(context).pushNamed(AppRoutes.seeHowItWorks);
+
     if (isMobile) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _gradientButton('Talk to an expert'),
+          _gradientButton('Talk to an expert', onTap: openExpert),
           const SizedBox(height: 12),
-          _ghostButton('See how it works'),
+          _ghostButton('See how it works', onTap: openDemo),
         ],
       );
     }
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        _gradientButton('Talk to an expert'),
+        _gradientButton('Talk to an expert', onTap: openExpert),
         const SizedBox(width: 12),
-        _ghostButton('See how it works'),
+        _ghostButton('See how it works', onTap: openDemo),
       ],
     );
   }
@@ -648,8 +654,8 @@ class _HeroSectionState extends State<HeroSection>
     );
   }
 
-  Widget _gradientButton(String label, {bool small = false}) {
-    return Container(
+  Widget _gradientButton(String label, {bool small = false, VoidCallback? onTap}) {
+    final child = Container(
       alignment: Alignment.center,
       padding: EdgeInsets.symmetric(
         horizontal: small ? 26 : 36,
@@ -675,10 +681,21 @@ class _HeroSectionState extends State<HeroSection>
         ),
       ),
     );
+
+    if (onTap == null) return child;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(100),
+        child: child,
+      ),
+    );
   }
 
-  Widget _ghostButton(String label) {
-    return Container(
+  Widget _ghostButton(String label, {VoidCallback? onTap}) {
+    final child = Container(
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
       decoration: BoxDecoration(
@@ -700,6 +717,17 @@ class _HeroSectionState extends State<HeroSection>
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
+      ),
+    );
+
+    if (onTap == null) return child;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(100),
+        child: child,
       ),
     );
   }

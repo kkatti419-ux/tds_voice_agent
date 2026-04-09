@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:tds_voice_agent/widgets/earth_section.dart';
-import 'package:tds_voice_agent/widgets/features_section.dart';
+import 'package:tds_voice_agent/routing/app_routes.dart';
+import 'package:tds_voice_agent/widgets/earth/earth_section.dart';
+import 'package:tds_voice_agent/widgets/feature/features_section.dart';
 import 'package:tds_voice_agent/widgets/footer_section.dart';
 import 'package:tds_voice_agent/widgets/hero_section.dart';
-import 'package:tds_voice_agent/widgets/marquee_section.dart';
+import 'package:tds_voice_agent/widgets/marquee/marquee_section.dart';
 import 'package:tds_voice_agent/widgets/responsive_navbar.dart';
-import 'package:tds_voice_agent/widgets/stats_section.dart';
 import 'package:tds_voice_agent/widgets/comparisons_section.dart';
 import 'package:tds_voice_agent/widgets/background_painters.dart';
+import 'package:tds_voice_agent/widgets/stats/stats_section.dart';
 
 import '../core/agni_colors.dart';
 import '../domain/entities/agni_content.dart';
@@ -207,24 +208,42 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                         item,
                         style: AppTypography.navItem(color: text2Color),
                       ),
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        final route = AppRoutes.pathForNavLabel(item);
+                        if (route != null) {
+                          Navigator.of(context).pushNamed(route);
+                        }
+                      },
                     ),
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: AgniColors.grad,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pushNamed(
+                            AppRoutes.contactSales,
+                          );
+                        },
                         borderRadius: BorderRadius.circular(24),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'Contact sales →',
-                        style: AppTypography.ctaCompact(color: Colors.white),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: AgniColors.grad,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Contact sales →',
+                            style: AppTypography.ctaCompact(color: Colors.white),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -273,6 +292,9 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                   navItems: content.navItems,
                   onToggleTheme: widget.onToggleTheme,
                   onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+                  onOpenRoute: (route) {
+                    Navigator.of(context).pushNamed(route);
+                  },
                 ),
               ),
               Expanded(
@@ -324,7 +346,12 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                         EarthSection(langPills: [], isDark: isDark),
                         // CTABanner(isDark: isDark),
                         // _buildFooter(),
-                        FooterSection(isDark: isDark),
+                        FooterSection(
+                          isDark: isDark,
+                          onOpenRoute: (route) {
+                            Navigator.of(context).pushNamed(route);
+                          },
+                        ),
                       ],
                     ),
                   ),

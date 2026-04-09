@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tds_voice_agent/routing/app_routes.dart';
 
 class FooterSection extends StatelessWidget {
   final bool isDark;
 
-  const FooterSection({super.key, required this.isDark});
+  /// Pushes a named route for footer links (see [AppRoutes.pathForFooterLink]).
+  final void Function(String route)? onOpenRoute;
+
+  const FooterSection({
+    super.key,
+    required this.isDark,
+    this.onOpenRoute,
+  });
 
   Color get text3Color => isDark ? Colors.white60 : Colors.black54;
 
@@ -60,10 +68,7 @@ class FooterSection extends StatelessWidget {
               .map(
                 (link) => Padding(
                   padding: const EdgeInsets.only(left: 24),
-                  child: Text(
-                    link,
-                    style: TextStyle(fontSize: 14, color: text3Color),
-                  ),
+                  child: _footerLink(link),
                 ),
               )
               .toList(),
@@ -87,12 +92,7 @@ class FooterSection extends StatelessWidget {
           runSpacing: 8,
           alignment: WrapAlignment.center,
           children: links
-              .map(
-                (link) => Text(
-                  link,
-                  style: TextStyle(fontSize: 14, color: text3Color),
-                ),
-              )
+              .map((link) => _footerLink(link))
               .toList(),
         ),
 
@@ -100,6 +100,22 @@ class FooterSection extends StatelessWidget {
 
         _copyright(),
       ],
+    );
+  }
+
+  Widget _footerLink(String link) {
+    final style = TextStyle(fontSize: 14, color: text3Color);
+    final route = AppRoutes.pathForFooterLink(link);
+    if (route == null || onOpenRoute == null) {
+      return Text(link, style: style);
+    }
+    return InkWell(
+      onTap: () => onOpenRoute!(route),
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        child: Text(link, style: style),
+      ),
     );
   }
 

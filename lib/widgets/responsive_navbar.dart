@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
+import 'package:tds_voice_agent/routing/app_routes.dart';
 import 'package:tds_voice_agent/theme/app_typography.dart';
 
 class ResponsiveNavbar extends StatelessWidget {
@@ -8,12 +9,16 @@ class ResponsiveNavbar extends StatelessWidget {
   final VoidCallback onToggleTheme;
   final VoidCallback? onMenuTap;
 
+  /// Pushes a named [AppRoutes] path (e.g. [AppRoutes.solutions]).
+  final void Function(String route)? onOpenRoute;
+
   const ResponsiveNavbar({
     super.key,
     required this.isDark,
     required this.navItems,
     required this.onToggleTheme,
     this.onMenuTap,
+    this.onOpenRoute,
   });
 
   @override
@@ -49,17 +54,27 @@ class ResponsiveNavbar extends StatelessWidget {
         const Spacer(),
         Row(
           children: navItems.map((item) {
+            final route = AppRoutes.pathForNavLabel(item);
             return Padding(
               padding: const EdgeInsets.only(left: 32),
-              child: Text(
-                item,
-                style: AppTypography.navItem(color: _text2Color(context)),
+              child: InkWell(
+                onTap: route != null && onOpenRoute != null
+                    ? () => onOpenRoute!(route)
+                    : null,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                  child: Text(
+                    item,
+                    style: AppTypography.navItem(color: _text2Color(context)),
+                  ),
+                ),
               ),
             );
           }).toList(),
         ),
         const SizedBox(width: 32),
-        _ctaButton(),
+        _ctaButton(context),
         const SizedBox(width: 12),
         _themeToggle(),
       ],
@@ -102,8 +117,8 @@ class ResponsiveNavbar extends StatelessWidget {
   }
 
   // 🚀 CTA Button
-  Widget _ctaButton() {
-    return Container(
+  Widget _ctaButton(BuildContext context) {
+    final child = Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
         gradient: AgniColors.grad,
@@ -113,6 +128,14 @@ class ResponsiveNavbar extends StatelessWidget {
         'Contact sales →',
         style: AppTypography.ctaCompact(color: Colors.white),
       ),
+    );
+
+    if (onOpenRoute == null) return child;
+
+    return InkWell(
+      onTap: () => onOpenRoute!(AppRoutes.contactSales),
+      borderRadius: BorderRadius.circular(24),
+      child: child,
     );
   }
 
