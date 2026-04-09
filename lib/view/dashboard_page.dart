@@ -363,7 +363,7 @@ class _AgniLandingPageState extends State<AgniLandingPage>
             child: Container(
               width: 6, height: 6,
               decoration: BoxDecoration(
-                color: isDark ? AgniColors.forestBright : AgniColors.forestLight,
+                color: isDark ? AgniColors.forestMid : AgniColors.forestLight,
                 shape: BoxShape.circle,
                 boxShadow: isDark ? [
                   BoxShadow(
@@ -796,7 +796,7 @@ class _AgniLandingPageState extends State<AgniLandingPage>
           const SizedBox(height: 24),
           // Overflow hidden wrapper, marquee scrolls naturally
           SizedBox(
-            height: 41, // 10px top + 10px bottom padding + ~21px text
+            height: 43, // 10px top + 10px bottom padding + ~21px text
             child: AnimatedBuilder(
               animation: _marqueeController,
               builder: (_, __) {

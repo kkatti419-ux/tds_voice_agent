@@ -1,6 +1,4 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:tds_voice_agent/widgets/earth_section.dart';
 import 'package:tds_voice_agent/widgets/features_section.dart';
 import 'package:tds_voice_agent/widgets/footer_section.dart';
@@ -13,6 +11,7 @@ import 'package:tds_voice_agent/widgets/background_painters.dart';
 
 import '../core/agni_colors.dart';
 import '../domain/entities/agni_content.dart';
+import '../theme/app_typography.dart';
 
 class VoiceScreen extends StatefulWidget {
   const VoiceScreen({super.key});
@@ -108,6 +107,7 @@ class AgniLandingPage extends StatefulWidget {
 
 class _AgniLandingPageState extends State<AgniLandingPage>
     with TickerProviderStateMixin {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _scrollController = ScrollController();
   final List<GlobalKey> _revealKeys = List.generate(5, (_) => GlobalKey());
   final List<bool> _revealed = List.filled(5, false);
@@ -167,10 +167,97 @@ class _AgniLandingPageState extends State<AgniLandingPage>
   Gradient get gradText =>
       isDark ? AgniColors.gradText : AgniColors.gradTextLight;
 
+  Widget _buildDrawer(BuildContext context) {
+    final borderColor = isDark
+        ? AgniColors.darkBorder.withOpacity(0.12)
+        : AgniColors.oceanMid.withOpacity(0.12);
+
+    return Drawer(
+      backgroundColor: bgColor,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Technodysis',
+                      style: AppTypography.brandWordmark(color: text2Color),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    color: text2Color,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: borderColor),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  for (final item in content.navItems)
+                    ListTile(
+                      title: Text(
+                        item,
+                        style: AppTypography.navItem(color: text2Color),
+                      ),
+                      onTap: () => Navigator.of(context).pop(),
+                    ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: AgniColors.grad,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'Contact sales →',
+                        style: AppTypography.ctaCompact(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: borderColor),
+            ListTile(
+              leading: Icon(
+                isDark ? Icons.light_mode : Icons.dark_mode,
+                color: isDark ? AgniColors.oceanBright : AgniColors.oceanMid,
+              ),
+              title: Text(
+                isDark ? 'Light mode' : 'Dark mode',
+                style: AppTypography.navItem(color: text2Color),
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+                widget.onToggleTheme();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: bgColor,
+      drawer: _buildDrawer(context),
       body: Stack(
         children: [
           // Background layer
@@ -189,9 +276,8 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                     isDark: isDark,
                     navItems: content.navItems,
                     onToggleTheme: widget.onToggleTheme,
-                    onMenuTap: () {
-                      // open drawer / menu
-                    },
+                    onMenuTap: () =>
+                        _scaffoldKey.currentState?.openDrawer(),
                   ),
                   // _buildHero(),
                   HeroSection(content: content, isDark: isDark),

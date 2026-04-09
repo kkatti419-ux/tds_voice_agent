@@ -1,8 +1,6 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
+import 'package:tds_voice_agent/theme/app_typography.dart';
 
 class ResponsiveNavbar extends StatelessWidget {
   final bool isDark;
@@ -55,11 +53,7 @@ class ResponsiveNavbar extends StatelessWidget {
               padding: const EdgeInsets.only(left: 32),
               child: Text(
                 item,
-                style: TextStyle(
-                  color: _text2Color(context),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTypography.navItem(color: _text2Color(context)),
               ),
             );
           }).toList(),
@@ -74,15 +68,24 @@ class ResponsiveNavbar extends StatelessWidget {
 
   // 📱 Mobile Navbar
   Widget _buildMobile(BuildContext context) {
+    void openMenu() {
+      if (onMenuTap != null) {
+        onMenuTap!();
+      } else {
+        Scaffold.maybeOf(context)?.openDrawer();
+      }
+    }
+
     return Row(
       children: [
         _logo(),
         const Spacer(),
         _themeToggle(),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: onMenuTap,
-          child: Icon(Icons.menu, color: _text2Color(context)),
+        const SizedBox(width: 4),
+        IconButton(
+          icon: Icon(Icons.menu_rounded, color: _text2Color(context)),
+          tooltip: 'Menu',
+          onPressed: openMenu,
         ),
       ],
     );
@@ -91,10 +94,9 @@ class ResponsiveNavbar extends StatelessWidget {
   // 🎨 Logo
   Widget _logo() {
     return Text(
-      'Technodysis.',
-      style: GoogleFonts.playfairDisplay(
-        fontSize: 22,
-        fontWeight: FontWeight.w900,
+      'Technodysis',
+      style: AppTypography.brandWordmark(
+        color: isDark ? AgniColors.darkText : AgniColors.lightOceanDeep,
       ),
     );
   }
@@ -107,13 +109,9 @@ class ResponsiveNavbar extends StatelessWidget {
         gradient: AgniColors.grad,
         borderRadius: BorderRadius.circular(24),
       ),
-      child: const Text(
+      child: Text(
         'Contact sales →',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
+        style: AppTypography.ctaCompact(color: Colors.white),
       ),
     );
   }
