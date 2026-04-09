@@ -128,7 +128,7 @@ class _HeroSectionState extends State<HeroSection>
                       const SizedBox(height: 60),
                       // _buildPhoneMockup(),
                       VoicePhoneWidget(
-                        isDark: true,
+                        isDark: isDark,
                         // languages: ["English", "Hindi", "Tamil"],
                         // floatingCards: [
                         //   FloatingCardData(
@@ -178,7 +178,7 @@ class _HeroSectionState extends State<HeroSection>
                       SizedBox(
                         width: 320,
                         child: VoicePhoneWidget(
-                          isDark: true,
+                          isDark: isDark,
                           // languages: ["English", "Hindi", "Tamil"],
                           // floatingCards: [
                           //   FloatingCardData(

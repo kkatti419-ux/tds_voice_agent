@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:tds_voice_agent/routing/app_routes.dart';
+import 'package:tds_voice_agent/theme/theme_mode_notifier.dart';
 import 'package:tds_voice_agent/widgets/earth/earth_section.dart';
 import 'package:tds_voice_agent/widgets/feature/features_section.dart';
 import 'package:tds_voice_agent/widgets/footer_section.dart';
@@ -14,15 +16,8 @@ import '../core/agni_colors.dart';
 import '../domain/entities/agni_content.dart';
 import '../theme/app_typography.dart';
 
-class VoiceScreen extends StatefulWidget {
+class VoiceScreen extends StatelessWidget {
   const VoiceScreen({super.key});
-
-  @override
-  State<VoiceScreen> createState() => _VoiceScreenState();
-}
-
-class _VoiceScreenState extends State<VoiceScreen> {
-  bool _isDark = true;
 
   static final AgniContent _defaultContent = AgniContent(
     navItems: const ['Solutions', 'Industries', 'Platform', 'Pricing'],
@@ -81,10 +76,11 @@ class _VoiceScreenState extends State<VoiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AgniLandingPage(
       content: _defaultContent,
-      isDark: _isDark,
-      onToggleTheme: () => setState(() => _isDark = !_isDark),
+      isDark: isDark,
+      onToggleTheme: () => context.read<ThemeModeNotifier>().toggle(),
     );
   }
 }
