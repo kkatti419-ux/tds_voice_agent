@@ -1,64 +1,308 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../viewmodel/voice_viewmodel.dart';
-import '../widgets/mic_animation.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:tds_voice_agent/widgets/earth_section.dart';
+import 'package:tds_voice_agent/widgets/features_section.dart';
+import 'package:tds_voice_agent/widgets/footer_section.dart';
+import 'package:tds_voice_agent/widgets/hero_section.dart';
+import 'package:tds_voice_agent/widgets/marquee_section.dart';
+import 'package:tds_voice_agent/widgets/responsive_navbar.dart';
+import 'package:tds_voice_agent/widgets/stats_section.dart';
+import 'package:tds_voice_agent/widgets/comparisons_section.dart';
+import 'package:tds_voice_agent/widgets/background_painters.dart';
 
-class VoiceScreen extends StatelessWidget {
+import '../core/agni_colors.dart';
+import '../domain/entities/agni_content.dart';
+
+class VoiceScreen extends StatefulWidget {
   const VoiceScreen({super.key});
 
   @override
+  State<VoiceScreen> createState() => _VoiceScreenState();
+}
+
+class _VoiceScreenState extends State<VoiceScreen> {
+  bool _isDark = true;
+
+  static final AgniContent _defaultContent = AgniContent(
+    navItems: const ['Solutions', 'Industries', 'Platform', 'Pricing'],
+    marqueeItems: const ['AI Agents', 'Voice Bots', 'Automation', 'Analytics'],
+    heroLangs: const ['English', 'Hindi', 'Tamil', 'Kannada'],
+    tickerTags: const ['Healthcare', 'Banking', 'Retail', 'Telecom'],
+    stats: [
+      StatItem(value: '99.9%', description: 'Uptime'),
+      StatItem(value: '24/7', description: 'Always on support'),
+      StatItem(value: '10x', description: 'Faster operations'),
+    ],
+    features: const [
+      FeatureItem(
+        'AI',
+        'Agentic AI',
+        'Autonomous enterprise workflows.',
+        'Live',
+      ),
+      FeatureItem(
+        'VO',
+        'Voice',
+        'Multilingual speech interactions.',
+        'Realtime',
+      ),
+      FeatureItem(
+        'AU',
+        'Automation',
+        'End-to-end process automation.',
+        'Secure',
+      ),
+    ],
+    comparisons: const [
+      ComparisonCardData(
+        isOurs: true,
+        badge: 'Technodysis',
+        headline: 'Built for enterprise scale.',
+        items: ['Low latency', 'Multilingual', 'Barge-in support'],
+      ),
+      ComparisonCardData(
+        isOurs: false,
+        badge: 'Others',
+        headline: 'General chatbot stacks.',
+        items: ['Higher latency', 'Limited voice', 'Poor interruption'],
+      ),
+    ],
+    langPills: [
+      LangPill('English', 'ocean'),
+      LangPill('Hindi', 'forest'),
+      LangPill('Tamil', ''),
+    ],
+    floatingCards: const [
+      FloatingCardData('100K+', 'Daily calls', 1.0),
+      FloatingCardData('\$0.03/min', 'Voice cost', 2.2),
+    ],
+  );
+
+  @override
   Widget build(BuildContext context) {
-    final vm = Provider.of<VoiceViewModel>(context);
+    return AgniLandingPage(
+      content: _defaultContent,
+      isDark: _isDark,
+      onToggleTheme: () => setState(() => _isDark = !_isDark),
+    );
+  }
+}
 
+// Main Landing Page
+class AgniLandingPage extends StatefulWidget {
+  final AgniContent content;
+  final bool isDark;
+  final VoidCallback onToggleTheme;
+
+  const AgniLandingPage({
+    super.key,
+    required this.content,
+    required this.isDark,
+    required this.onToggleTheme,
+  });
+
+  @override
+  State<AgniLandingPage> createState() => _AgniLandingPageState();
+}
+
+class _AgniLandingPageState extends State<AgniLandingPage>
+    with TickerProviderStateMixin {
+  final ScrollController _scrollController = ScrollController();
+  final List<GlobalKey> _revealKeys = List.generate(5, (_) => GlobalKey());
+  final List<bool> _revealed = List.filled(5, false);
+  late AnimationController _globeController;
+  late AnimationController _marqueeController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _globeController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
+
+    _marqueeController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 24),
+    )..repeat();
+
+    _scrollController.addListener(_checkReveal);
+
+    // Initial reveal check after build
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkReveal());
+  }
+
+  void _checkReveal() {
+    for (int i = 0; i < _revealKeys.length; i++) {
+      if (_revealed[i]) continue;
+      final ctx = _revealKeys[i].currentContext;
+      if (ctx == null) continue;
+      final box = ctx.findRenderObject() as RenderBox?;
+      if (box == null) continue;
+      final pos = box.localToGlobal(Offset.zero);
+      final screenH = MediaQuery.of(context).size.height;
+      if (pos.dy < screenH * 0.88) {
+        setState(() => _revealed[i] = true);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _globeController.dispose();
+    _marqueeController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  AgniContent get content => widget.content;
+  bool get isDark => widget.isDark;
+
+  Color get bgColor => isDark ? AgniColors.darkBg : AgniColors.lightBg;
+  Color get textColor => isDark ? AgniColors.darkText : AgniColors.lightText;
+  Color get text2Color => isDark ? AgniColors.darkText2 : AgniColors.lightText2;
+  Color get text3Color => isDark ? AgniColors.darkText3 : AgniColors.lightText3;
+  Gradient get gradText =>
+      isDark ? AgniColors.gradText : AgniColors.gradTextLight;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Voice Agent")),
-      body: Column(
+      backgroundColor: bgColor,
+      body: Stack(
         children: [
-          const SizedBox(height: 16),
-          Text(vm.statusText),
-          const SizedBox(height: 12),
-          Expanded(
-            child: ListView.builder(
-              itemCount: vm.messages.length,
-              itemBuilder: (_, index) {
-                final msg = vm.messages[index];
-
-                return Align(
-                  alignment: msg.isUser
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.all(8),
-                    padding: const EdgeInsets.all(12),
-                    color: msg.isUser ? Colors.blue : Colors.grey.shade300,
-                    child: Text(msg.text),
+          // Background layer
+          _buildBackground(),
+          // Content
+          NotificationListener<ScrollNotification>(
+            onNotification: (n) {
+              _checkReveal();
+              return false;
+            },
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              child: Column(
+                children: [
+                  ResponsiveNavbar(
+                    isDark: isDark,
+                    navItems: content.navItems,
+                    onToggleTheme: widget.onToggleTheme,
+                    onMenuTap: () {
+                      // open drawer / menu
+                    },
                   ),
-                );
-              },
+                  // _buildHero(),
+                  HeroSection(content: content, isDark: isDark),
+                  // _buildMarquee(),
+                  MarqueeSection(items: content.marqueeItems, isDark: isDark),
+                  // _buildStats(),
+                  StatsSection(
+                    isDark: false,
+                    stats: [
+                      StatItem(value: "2,100+", description: "Businesses"),
+                      StatItem(value: "12+", description: "Countries"),
+                      StatItem(value: "98%", description: "Success Rate"),
+                    ],
+                  ),
+                  // _buildFeatures(),
+                  // _buildFeatures()
+                  // _buildComparison(),
+                  ComparisonsSection(
+                    comparisons: content.comparisons,
+                    isDark: isDark,
+                    textColor: textColor,
+                    text2Color: text2Color,
+                    text3Color: text3Color,
+                  ),
+                  // _buildEarthSection(),
+                  // _buildCTABanner(),
+                  FeaturesSection(features: content.features, isDark: isDark),
+
+                  EarthSection(langPills: [], isDark: isDark),
+
+                  // CTABanner(isDark: isDark),
+                  // _buildFooter(),
+                  FooterSection(isDark: isDark),
+                ],
+              ),
             ),
           ),
-
-          GestureDetector(
-            onTap: () => vm.toggleListening(),
-            child: MicAnimation(
-              isListening: vm.isListening,
-              amplitudeDb: vm.amplitudeDb,
-              isAgentSpeaking: vm.isAgentSpeaking,
-            ),
-          ),
-
-          // GestureDetector(
-          //   onTapDown: (_) {
-          //     vm.startListening();
-          //   },
-          //   onTapUp: (_) {
-          //     vm.stopListening();
-          //   },
-          //   child: MicAnimation(isListening: vm.isListening),
-          // ),
-          const SizedBox(height: 40),
         ],
       ),
     );
   }
+
+  // ─── Background ───────────────────────────────────────────────────────────
+
+  Widget _buildBackground() {
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _globeController,
+        builder: (_, __) => CustomPaint(
+          painter: BackgroundPainter(isDark: isDark, t: _globeController.value),
+        ),
+      ),
+    );
+  }
+
+  // ─── Navbar ───────────────────────────────────────────────────────────────
 }
+
+// ─── Reveal Widget ────────────────────────────────────────────────────────────
+
+// ─── Marquee Track ────────────────────────────────────────────────────────────
+// Replicates CSS @keyframes marquee { from{translateX(0)} to{translateX(-50%)} }
+// Items are NOT fixed-width — they size to content + padding:10px 36px, exactly
+// matching the CSS .marquee-item { padding:10px 36px; flex-shrink:0; border-right }
+
+class _MarqueeScroller extends StatelessWidget {
+  final double progress;
+  final List<Widget> children;
+
+  const _MarqueeScroller({required this.progress, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomSingleChildLayout(
+      delegate: _MarqueeLayoutDelegate(),
+      child: OverflowBox(
+        alignment: Alignment.centerLeft,
+        maxWidth: double.infinity,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: children
+              .map((child) => _MarqueeItem(progress: progress, child: child))
+              .toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class _MarqueeItem extends StatelessWidget {
+  final double progress;
+  final Widget child;
+  const _MarqueeItem({required this.progress, required this.child});
+
+  @override
+  Widget build(BuildContext context) => child;
+}
+
+class _MarqueeLayoutDelegate extends SingleChildLayoutDelegate {
+  @override
+  bool shouldRelayout(_MarqueeLayoutDelegate old) => false;
+  @override
+  Size getSize(BoxConstraints constraints) =>
+      Size(constraints.maxWidth, constraints.maxHeight);
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      BoxConstraints(maxHeight: constraints.maxHeight);
+  @override
+  Offset getPositionForChild(Size size, Size childSize) => Offset.zero;
+}
+
+// Stateful marquee that measures its children and translates
+
+// ─── Glass Card ───────────────────────────────────────────────────────────────
