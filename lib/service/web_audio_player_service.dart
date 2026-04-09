@@ -108,6 +108,8 @@ class AudioPlayerService {
       if (!done.isCompleted) done.complete();
     }
 
+    audio.loop = false;
+
     audio.onEnded.first.then((_) {
       completeSafe();
     });
@@ -140,6 +142,7 @@ class AudioPlayerService {
     final url = html.Url.createObjectUrlFromBlob(blob);
     final audio = html.AudioElement(url);
     _webAudio = audio;
+    audio.loop = false;
     final done = Completer<void>();
 
     void completeSafe() {

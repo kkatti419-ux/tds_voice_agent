@@ -426,10 +426,15 @@
 // }
 
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:tds_voice_agent/model/voice_message.dart';
+import 'package:tds_voice_agent/viewmodel/voice_viewmodel.dart';
+
+/// Hero phone mockup: same behavior as dev [VoiceScreen] — WebSocket JSON + PCM
+/// via [VoiceViewModel], binary TTS playback, barge-in, silence commit.
 class VoicePhoneWidget extends StatefulWidget {
   final bool isDark;
 
@@ -441,28 +446,26 @@ class VoicePhoneWidget extends StatefulWidget {
 
 class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
     with TickerProviderStateMixin {
-  late stt.SpeechToText _speech;
-  late FlutterTts _tts;
   late AnimationController _waveController;
   late ScrollController _scrollController;
-
-  bool _isListening = false;
-
-  List<Map<String, dynamic>> messages = [];
+  bool _didAutostart = false;
 
   @override
   void initState() {
     super.initState();
-
-    _speech = stt.SpeechToText();
-    _tts = FlutterTts();
-
     _scrollController = ScrollController();
-
     _waveController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _didAutostart) return;
+      _didAutostart = true;
+      if (kIsWeb) {
+        context.read<VoiceViewModel>().requestAutostartMic();
+      }
+    });
   }
 
   @override
@@ -472,57 +475,14 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
     super.dispose();
   }
 
-  /// 🎤 Start/Stop Listening
-  void _listen() async {
-    if (!_isListening) {
-      bool available = await _speech.initialize();
-
-      if (available) {
-        setState(() => _isListening = true);
-
-        _speech.listen(
-          onResult: (result) async {
-            final text = result.recognizedWords;
-
-            if (text.isNotEmpty) {
-              final reply = _generateReply(text);
-
-              setState(() {
-                messages.add({"text": text, "isUser": true});
-                messages.add({"text": reply, "isUser": false});
-              });
-
-              _scrollToBottom();
-
-              await _tts.speak(reply); // 🔊 SPEAK
-            }
-          },
-        );
-      }
-    } else {
-      setState(() => _isListening = false);
-      _speech.stop();
-    }
-  }
-
-  /// 🤖 Dummy Reply Logic
-  String _generateReply(String input) {
-    if (input.toLowerCase().contains("price")) {
-      return "Pricing starts from ₹2 per minute.";
-    }
-    return "You said: $input";
-  }
-
-  /// 🔽 Auto Scroll
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOut,
-        );
-      }
+    Future.delayed(const Duration(milliseconds: 80), () {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -530,91 +490,142 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 300,
-      height: 520,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
+    return Consumer<VoiceViewModel>(
+      builder: (context, vm, _) {
+        if (vm.messages.isNotEmpty) {
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) => _scrollToBottom());
+        }
 
-          /// 🎙️ Avatar
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.blue,
-            child: Icon(
-              _isListening ? Icons.mic : Icons.mic_none,
-              color: Colors.white,
-            ),
+        return Container(
+          width: 300,
+          height: 520,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(30),
           ),
-
-          const SizedBox(height: 20),
-
-          /// 🔊 Waveform
-          _waveform(),
-
-          const SizedBox(height: 10),
-
-          /// 💬 CHAT (SCROLLABLE)
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final msg = messages[index];
-                return _chatBubble(msg["text"], isUser: msg["isUser"]);
-              },
-            ),
-          ),
-
-          /// 💰 Pricing Card
-          _pricingCard(),
-
-          const SizedBox(height: 10),
-
-          /// 🎤 Button
-          GestureDetector(
-            onTap: _listen,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)],
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  vm.statusText,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: widget.isDark ? Colors.white70 : Colors.black54,
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(50),
               ),
-              child: Text(
-                _isListening ? "Listening..." : "Tap to speak",
-                style: const TextStyle(color: Colors.white),
+              const SizedBox(height: 10),
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: vm.isListening ? Colors.green.shade700 : Colors.blue,
+                child: Icon(
+                  vm.micMutedByUser || !vm.isListening
+                      ? Icons.mic_off
+                      : Icons.mic,
+                  color: Colors.white,
+                ),
               ),
-            ),
+              const SizedBox(height: 10),
+              _waveform(vm),
+              const SizedBox(height: 6),
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  itemCount: vm.messages.length,
+                  itemBuilder: (context, index) {
+                    final VoiceMessage msg = vm.messages[index];
+                    return _chatBubble(msg.text, isUser: msg.isUser);
+                  },
+                ),
+              ),
+              _pricingCard(),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      tooltip: vm.agentTtsMuted
+                          ? 'Unmute agent voice'
+                          : 'Mute agent voice',
+                      onPressed: vm.toggleAgentTtsMuted,
+                      icon: Icon(
+                        vm.agentTtsMuted
+                            ? Icons.volume_off_rounded
+                            : Icons.volume_up_rounded,
+                        color: widget.isDark ? Colors.white70 : Colors.black54,
+                        size: 22,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    Flexible(
+                      child: GestureDetector(
+                        onTap: () => vm.toggleListening(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF5B6CFF),
+                                Color(0xFF8E44AD),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: Text(
+                            vm.micMutedByUser || !vm.isListening
+                                ? 'Tap to unmute'
+                                : 'Mute mic',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
           ),
-
-          const SizedBox(height: 20),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  /// 🔊 Wave Animation
-  Widget _waveform() {
+  Widget _waveform(VoiceViewModel vm) {
     final heights = [20.0, 30.0, 40.0, 25.0, 35.0];
+    final level = ((vm.amplitudeDb + 120) / 120).clamp(0.0, 1.0);
 
     return AnimatedBuilder(
       animation: _waveController,
-      builder: (_, __) {
+      builder: (context, _) {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: heights.map((h) {
-            final scale = 0.5 + math.sin(_waveController.value * math.pi) * 0.5;
-
+          children: heights.asMap().entries.map((e) {
+            final i = e.key;
+            final h = e.value;
+            final wobble =
+                0.55 + 0.45 * math.sin(_waveController.value * math.pi + i);
+            final scale =
+                vm.isListening ? (0.35 + level * 0.65) * wobble : 0.35;
             return Container(
               width: 4,
-              height: h * scale,
+              height: (h * scale).clamp(6.0, 48.0),
               margin: const EdgeInsets.symmetric(horizontal: 2),
               color: Colors.blue,
             );
@@ -624,7 +635,6 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
     );
   }
 
-  /// 💬 Chat Bubble
   Widget _chatBubble(String text, {required bool isUser}) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -647,22 +657,21 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
     );
   }
 
-  /// 💰 Pricing Card
   Widget _pricingCard() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
+        color: Colors.green.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.green),
       ),
-      child: Column(
-        children: const [
-          Text("Pricing", style: TextStyle(fontWeight: FontWeight.bold)),
+      child: const Column(
+        children: [
+          Text('Pricing', style: TextStyle(fontWeight: FontWeight.bold)),
           SizedBox(height: 6),
-          Text("₹2 / min"),
-          Text("AI Voice + Automation"),
+          Text('₹2 / min'),
+          Text('AI Voice + Automation'),
         ],
       ),
     );
