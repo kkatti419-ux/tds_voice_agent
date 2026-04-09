@@ -25,44 +25,44 @@ Widget build(BuildContext context) {
   final tp = TextPainter(textDirection: TextDirection.ltr);
   double totalWidth = 0;
 
+  // Per segment: horizontal padding 50+50, divider width 3.
+  const double kSegmentPadding = 100;
+  const double kDividerWidth = 3;
+
   for (final item in widget.items) {
     tp.text = TextSpan(text: item, style: widget.textStyle);
     tp.layout();
-    totalWidth += tp.width + 72 + 1;
+    totalWidth += tp.width + kSegmentPadding + kDividerWidth;
   }
 
   // Start from right edge and move fully left
   final offset = screenWidth - (widget.progress * (screenWidth + totalWidth));
 
   return ClipRect(
-    child: 
-    Transform.translate(
+    child: Transform.translate(
       offset: Offset(offset, -3),
-      child: 
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: 
-        widget.items.map((label) {
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Text(label, style: widget.textStyle),
-      ),
-      Container(
-        height: 30,
-        width: 3,
-        color: widget.dividerColor,
-      ),
-    ],
-  );
-}).toList(),
-        // widget.items.map((label) {
-        //   return 
-        //   Text(label, style: widget.textStyle);
-         
-        // }).toList(),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const NeverScrollableScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: widget.items.map((label) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  child: Text(label, style: widget.textStyle),
+                ),
+                Container(
+                  height: 30,
+                  width: kDividerWidth,
+                  color: widget.dividerColor,
+                ),
+              ],
+            );
+          }).toList(),
+        ),
       ),
     ),
   );
