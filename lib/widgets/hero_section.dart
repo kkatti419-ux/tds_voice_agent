@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
 import 'package:tds_voice_agent/domain/entities/agni_content.dart';
 import 'package:tds_voice_agent/widgets/background_painters.dart';
+import 'package:tds_voice_agent/widgets/3/phone_mockup_widget.dart';
 
 class HeroSection extends StatefulWidget {
   final AgniContent content;
@@ -16,11 +17,12 @@ class HeroSection extends StatefulWidget {
   State<HeroSection> createState() => _HeroSectionState();
 }
 
-class _HeroSectionState extends State<HeroSection> with TickerProviderStateMixin {
+class _HeroSectionState extends State<HeroSection>
+    with TickerProviderStateMixin {
   late AnimationController _globeController;
   late AnimationController _waveController;
   late AnimationController _floatController;
-  
+
   int _langIndex = 0;
   double _langOpacity = 1.0;
   double _langOffset = 0.0;
@@ -32,7 +34,8 @@ class _HeroSectionState extends State<HeroSection> with TickerProviderStateMixin
   Color get textColor => isDark ? AgniColors.darkText : AgniColors.lightText;
   Color get text2Color => isDark ? AgniColors.darkText2 : AgniColors.lightText2;
   Color get text3Color => isDark ? AgniColors.darkText3 : AgniColors.lightText3;
-  Gradient get gradText => isDark ? AgniColors.gradText : AgniColors.gradTextLight;
+  Gradient get gradText =>
+      isDark ? AgniColors.gradText : AgniColors.gradTextLight;
 
   @override
   void initState() {
@@ -102,13 +105,13 @@ class _HeroSectionState extends State<HeroSection> with TickerProviderStateMixin
               ),
             ),
           ),
-          
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final isMobile = constraints.maxWidth < 900;
-                
+
                 if (isMobile) {
                   return Column(
                     children: [
@@ -122,7 +125,31 @@ class _HeroSectionState extends State<HeroSection> with TickerProviderStateMixin
                       const SizedBox(height: 32),
                       _buildButtons(isMobile: true),
                       const SizedBox(height: 60),
-                      _buildPhoneMockup(),
+                      // _buildPhoneMockup(),
+                      VoicePhoneWidget(
+                        isDark: true,
+                        // languages: ["English", "Hindi", "Tamil"],
+                        // floatingCards: [
+                        //   FloatingCardData(
+                        //     "100K+",
+                        //     "Daily calls",
+                        //     0.0,
+                        //   ), // stat, label, delayFactor
+                        //   FloatingCardData("\$0.03", "Cost/min", 0.0),
+                        // ],
+                      ),
+                      // PhoneMockupWidget(
+                      //   isDark: true,
+                      //   languages: ["English", "Hindi", "Tamil"],
+                      //   floatingCards: [
+                      //     FloatingCardData(
+                      //       "100K+",
+                      //       "Daily calls",
+                      //       0.0,
+                      //     ), // stat, label, delayFactor
+                      //     FloatingCardData("\$0.03", "Cost/min", 0.0),
+                      //   ],
+                      // ),
                     ],
                   );
                 } else {
@@ -149,7 +176,30 @@ class _HeroSectionState extends State<HeroSection> with TickerProviderStateMixin
                       // Mockup container
                       SizedBox(
                         width: 320,
-                        child: _buildPhoneMockup(),
+                        child: VoicePhoneWidget(
+                          isDark: true,
+                          // languages: ["English", "Hindi", "Tamil"],
+                          // floatingCards: [
+                          //   FloatingCardData(
+                          //     "100K+",
+                          //     "Daily calls",
+                          //     0.0,
+                          //   ), // stat, label, delayFactor
+                          //   FloatingCardData("\$0.03", "Cost/min", 0.0),
+                          // ],
+                        ),
+                        // PhoneMockupWidget(
+                        //   isDark: true,
+                        //   languages: ["English", "Hindi", "Tamil"],
+                        //   floatingCards: [
+                        //     FloatingCardData(
+                        //       "100K+",
+                        //       "Daily calls",
+                        //       0.0,
+                        //     ), // stat, label, delayFactor
+                        //     FloatingCardData("\$0.03", "Cost/min", 0.0),
+                        //   ],
+                        // ),
                       ),
                     ],
                   );
@@ -166,11 +216,7 @@ class _HeroSectionState extends State<HeroSection> with TickerProviderStateMixin
     return Text(
       'We build agentic AI and automation that transforms Healthcare, Banking, Insurance, Telecom, and Retail — with measurable ROI from day one.',
       textAlign: alignLeft ? TextAlign.left : TextAlign.center,
-      style: TextStyle(
-        fontSize: 16,
-        color: text3Color,
-        height: 1.6,
-      ),
+      style: TextStyle(fontSize: 16, color: text3Color, height: 1.6),
     );
   }
 
@@ -250,7 +296,9 @@ class _HeroSectionState extends State<HeroSection> with TickerProviderStateMixin
               width: 6,
               height: 6,
               decoration: BoxDecoration(
-                color: isDark ? AgniColors.forestBright : AgniColors.forestLight,
+                color: isDark
+                    ? AgniColors.forestBright
+                    : AgniColors.forestLight,
                 shape: BoxShape.circle,
                 boxShadow: isDark
                     ? [
@@ -284,7 +332,10 @@ class _HeroSectionState extends State<HeroSection> with TickerProviderStateMixin
             return Transform.translate(
               offset: Offset(0, offset),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: isDark
                       ? const Color(0xFF0E2D4A).withOpacity(0.60)
@@ -314,7 +365,9 @@ class _HeroSectionState extends State<HeroSection> with TickerProviderStateMixin
 
   Widget _buildHeroTitle({required bool isMobile}) {
     return Column(
-      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment: isMobile
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         Text(
           'Agentic AI + Automation',
@@ -356,170 +409,6 @@ class _HeroSectionState extends State<HeroSection> with TickerProviderStateMixin
             ),
           ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildPhoneMockup() {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          width: 280,
-          height: 460,
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF08162A).withOpacity(0.80)
-                : Colors.white.withOpacity(0.72),
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(
-              color: isDark
-                  ? AgniColors.oceanBright.withOpacity(0.18)
-                  : Colors.white.withOpacity(0.90),
-              width: isDark ? 1 : 1.5,
-            ),
-            boxShadow: isDark
-                ? [
-                    BoxShadow(
-                      color: AgniColors.oceanBright.withOpacity(0.20),
-                      blurRadius: 80,
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFF000000).withOpacity(0.40),
-                      blurRadius: 24,
-                      offset: const Offset(0, 24),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: const Color(0xFF0A2342).withOpacity(0.22),
-                      blurRadius: 80,
-                      offset: const Offset(0, 20),
-                    ),
-                  ],
-          ),
-          child: Stack(
-             children: [
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(40),
-                  gradient: LinearGradient(
-                    begin: const Alignment(-0.7, -0.9),
-                    end: const Alignment(1, 1),
-                    colors: isDark
-                        ? [
-                            AgniColors.oceanBright.withOpacity(0.06),
-                            AgniColors.forestLight.withOpacity(0.05),
-                          ]
-                        : [
-                            const Color(0xFFB4D7EB).withOpacity(0.22),
-                            const Color(0xFFB4E1C8).withOpacity(0.18),
-                          ],
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 16,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    width: 80,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AgniColors.oceanBright.withOpacity(0.15)
-                          : AgniColors.oceanMid.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                  ),
-                ),
-              ),
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildTalkingAvatar(),
-                    const SizedBox(height: 14),
-                    _buildWaveform(),
-                    const SizedBox(height: 20),
-                    if (_langs.isNotEmpty)
-                      AnimatedOpacity(
-                        duration: const Duration(milliseconds: 400),
-                        opacity: _langOpacity,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 400),
-                          transform: Matrix4.translationValues(0, _langOffset, 0),
-                          child: Text(
-                            _langs[_langIndex],
-                            style: GoogleFonts.playfairDisplay(
-                              fontSize: 27.2,
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Agentic copilots · 24/7 uptime',
-                      style: GoogleFonts.dmMono(
-                        fontSize: 12.48,
-                        color: text3Color,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
-                      decoration: BoxDecoration(
-                        gradient: AgniColors.grad,
-                        borderRadius: BorderRadius.circular(100),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AgniColors.oceanBright.withOpacity(
-                              isDark ? 0.35 : 0.28,
-                            ),
-                            blurRadius: 20,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Text(
-                        '● Tap to talk',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13.6,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Floating cards
-        if (widget.content.floatingCards.isNotEmpty)
-          Positioned(
-            top: 50,
-            right: -100, // Reduced from -120 to fix overflowing on some screens
-            child: _buildFloatingCard(
-              widget.content.floatingCards[0].stat,
-              widget.content.floatingCards[0].label,
-              widget.content.floatingCards[0].delayFactor,
-            ),
-          ),
-        if (widget.content.floatingCards.length > 1)
-          Positioned(
-            bottom: 90,
-            left: -90, // Reduced slightly
-            child: _buildFloatingCard(
-              widget.content.floatingCards[1].stat,
-              widget.content.floatingCards[1].label,
-              widget.content.floatingCards[1].delayFactor,
-            ),
-          ),
       ],
     );
   }
@@ -624,7 +513,8 @@ class _HeroSectionState extends State<HeroSection> with TickerProviderStateMixin
     return AnimatedBuilder(
       animation: _floatController,
       builder: (_, __) {
-        final t = ((_floatController.value * (1 / 4.0)) + delayFactor / 4.0) % 1.0;
+        final t =
+            ((_floatController.value * (1 / 4.0)) + delayFactor / 4.0) % 1.0;
         final offset = math.sin(t * math.pi * 2) * 7;
         return Transform.translate(
           offset: Offset(0, offset),
