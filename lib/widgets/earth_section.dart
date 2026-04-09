@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:tds_voice_agent/view/dashboard_page.dart';
-import 'package:tds_voice_agent/view/voice_screen.dart';
 import 'package:tds_voice_agent/widgets/cta_section.dart';
+import 'package:tds_voice_agent/widgets/earth_global_container.dart';
 
 class EarthSection extends StatefulWidget {
   final List<LangItem> langPills;

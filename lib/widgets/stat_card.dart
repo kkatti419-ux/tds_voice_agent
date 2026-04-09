@@ -1,4 +1,82 @@
+// import 'package:flutter/material.dart';
+// import 'package:tds_voice_agent/theme/app_typography.dart';
+
+// class StatCard extends StatelessWidget {
+//   final String value;
+//   final String description;
+//   final bool isDark;
+
+//   const StatCard({
+//     super.key,
+//     required this.value,
+//     required this.description,
+//     required this.isDark,
+//   });
+
+//   Color get text3Color => isDark ? Colors.white60 : Colors.black54;
+
+//   final LinearGradient gradText = const LinearGradient(
+//     colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)],
+//   );
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       decoration: BoxDecoration(
+//         color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+//         borderRadius: BorderRadius.circular(32),
+//         border: Border.all(color: Colors.grey.withOpacity(0.2)),
+//       ),
+//       child: Stack(
+//         children: [
+//           // 🔥 Top gradient line
+//           Positioned(
+//             top: 0,
+//             left: 0,
+//             right: 0,
+//             child: Container(
+//               height: 2,
+//               decoration: const BoxDecoration(
+             
+//                 borderRadius: BorderRadius.only(
+//                   topLeft: Radius.circular(32),
+//                   topRight: Radius.circular(32),
+//                 ),
+//               ),
+//             ),
+//           ),
+
+//           Padding(
+//             padding: const EdgeInsets.all(10),
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 // 🎨 Gradient number
+//                 ShaderMask(
+//                   shaderCallback: (bounds) => gradText.createShader(bounds),
+//                   child: Text(
+//                     value,
+//                     style: 
+//                     AppTypography.displaySmall(color: Colors.white),
+//                   ),
+//                 ),
+//                 const SizedBox(height: 10),
+//                 Text(
+//                   description,
+//                   style: 
+//                   AppTypography.bodyMedium(color: text3Color),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
 import 'package:flutter/material.dart';
+import 'package:tds_voice_agent/theme/app_typography.dart';
 
 class StatCard extends StatelessWidget {
   final String value;
@@ -12,7 +90,11 @@ class StatCard extends StatelessWidget {
     required this.isDark,
   });
 
-  Color get text3Color => isDark ? Colors.white60 : Colors.black54;
+  Color get textSecondary =>
+      isDark ? Colors.white60 : Colors.black54;
+
+  Color get cardColor =>
+      isDark ? Colors.white.withOpacity(0.04) : Colors.white;
 
   final LinearGradient gradText = const LinearGradient(
     colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)],
@@ -21,61 +103,78 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      padding: const EdgeInsets.symmetric(
+        vertical: 20,
+        horizontal: 16,
       ),
-      child: Stack(
-        children: [
-          // 🔥 Top gradient line
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 2,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)],
-                ),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(32),
-                  topRight: Radius.circular(32),
-                ),
-              ),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.15),
+        ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
-          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          /// Gradient animated number
+          ShaderMask(
+  shaderCallback: (bounds) =>
+      const LinearGradient(
+        colors: [
+          Color(0xFF5B6CFF),
+          Color(0xFF7B61FF),
+          Color(0xFF8E44AD),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ).createShader(bounds),
+  child: Text(
+    value,
+    textAlign: TextAlign.center,
+    style: AppTypography.displaySmall(
+      color: Colors.white,
+    ).copyWith(
+      fontSize: 36,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 0.5,
+    ),
+  ),
+),
+          // ShaderMask(
+          //   shaderCallback: (bounds) =>
+          //       gradText.createShader(bounds),
+          //   child: Text(
+          //     value,
+          //     textAlign: TextAlign.center,
+          //     style: AppTypography.displaySmall(
+          //       color: Colors.white,
+          //     ).copyWith(
+          //       fontSize: 36, // smaller & cleaner
+          //       fontWeight: FontWeight.w700,
+          //     ),
+          //   ),
+          // ),
 
-          Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 🎨 Gradient number
-                ShaderMask(
-                  shaderCallback: (bounds) => gradText.createShader(bounds),
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 42,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+          const SizedBox(height: 6),
 
-                const SizedBox(height: 10),
-
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: text3Color,
-                    height: 1.5,
-                  ),
-                ),
-              ],
+          /// Description text
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyMedium(
+              color: textSecondary,
+            ).copyWith(
+              fontSize: 20,
+              letterSpacing: 0.3,
             ),
           ),
         ],

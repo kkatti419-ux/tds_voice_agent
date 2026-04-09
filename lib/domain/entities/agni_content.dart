@@ -3,6 +3,8 @@ class StatItem {
   final String description;
 
   StatItem({required this.value, required this.description});
+
+  get suffix => null;
 }
 
 class FeatureItem {

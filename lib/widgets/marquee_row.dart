@@ -19,47 +19,53 @@ class MarqueeRow extends StatefulWidget {
 
 class _MarqueeRowState extends State<MarqueeRow> {
   @override
-  Widget build(BuildContext context) {
-    // Estimate item width from text metrics + padding
-    // padding:10px 36px = 72px horizontal padding per item
-    // We use TextPainter to measure each label
-    final tp = TextPainter(textDirection: TextDirection.ltr);
-    double totalHalfWidth = 0;
-    for (int i = 0; i < widget.items.length ~/ 2; i++) {
-      tp.text = TextSpan(text: widget.items[i], style: widget.textStyle);
-      tp.layout();
-      totalHalfWidth += tp.width + 72 + 1; // text + horizontal padding + border
-    }
+Widget build(BuildContext context) {
+  final screenWidth = MediaQuery.of(context).size.width;
 
-    // CSS: translateX(-50%) of the 20-item total = -totalHalfWidth
-    final offset = -(widget.progress * totalHalfWidth);
+  final tp = TextPainter(textDirection: TextDirection.ltr);
+  double totalWidth = 0;
 
-    return ClipRect(
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Transform.translate(
-          offset: Offset(offset, 0),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: widget.items
-                .map(
-                  (label) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 36,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        right: BorderSide(color: widget.dividerColor, width: 1),
-                      ),
-                    ),
-                    child: Text(label, style: widget.textStyle),
-                  ),
-                )
-                .toList(),
-          ),
-        ),
-      ),
-    );
+  for (final item in widget.items) {
+    tp.text = TextSpan(text: item, style: widget.textStyle);
+    tp.layout();
+    totalWidth += tp.width + 72 + 1;
   }
+
+  // Start from right edge and move fully left
+  final offset = screenWidth - (widget.progress * (screenWidth + totalWidth));
+
+  return ClipRect(
+    child: 
+    Transform.translate(
+      offset: Offset(offset, -3),
+      child: 
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: 
+        widget.items.map((label) {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Text(label, style: widget.textStyle),
+      ),
+      Container(
+        height: 30,
+        width: 3,
+        color: widget.dividerColor,
+      ),
+    ],
+  );
+}).toList(),
+        // widget.items.map((label) {
+        //   return 
+        //   Text(label, style: widget.textStyle);
+         
+        // }).toList(),
+      ),
+    ),
+  );
+}
+
 }

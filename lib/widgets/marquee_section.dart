@@ -1,11 +1,19 @@
+
+
+
 import 'package:flutter/material.dart';
+import 'package:tds_voice_agent/theme/app_typography.dart';
 import 'package:tds_voice_agent/widgets/marquee_row.dart';
 
 class MarqueeSection extends StatefulWidget {
   final List<String> items;
   final bool isDark;
 
-  const MarqueeSection({super.key, required this.items, required this.isDark});
+  const MarqueeSection({
+    super.key,
+    required this.items,
+    required this.isDark,
+  });
 
   @override
   State<MarqueeSection> createState() => _MarqueeSectionState();
@@ -21,8 +29,8 @@ class _MarqueeSectionState extends State<MarqueeSection>
 
     _marqueeController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 20),
-    )..repeat();
+      duration: const Duration(seconds: 25),
+    )..repeat(); // infinite smooth loop
   }
 
   @override
@@ -31,9 +39,11 @@ class _MarqueeSectionState extends State<MarqueeSection>
     super.dispose();
   }
 
-  Color get text2Color => widget.isDark ? Colors.white70 : Colors.black87;
+  Color get textPrimary =>
+      widget.isDark ? Colors.white70 : Colors.black87;
 
-  Color get text3Color => widget.isDark ? Colors.white54 : Colors.black54;
+  Color get textSecondary =>
+      widget.isDark ? Colors.white54 : Colors.black54;
 
   @override
   Widget build(BuildContext context) {
@@ -41,19 +51,22 @@ class _MarqueeSectionState extends State<MarqueeSection>
         ? widget.items
         : ["Google", "Amazon", "Meta", "Netflix"];
 
+    // duplicate for seamless scrolling
     final doubled = [...safeItems, ...safeItems];
 
     final borderColor = widget.isDark
-        ? Colors.blue.withOpacity(0.12)
+        ? Colors.blue.withOpacity(0.15)
         : const Color(0xFF1A4A6B).withOpacity(0.10);
+
+    final backgroundColor = widget.isDark
+        ? const Color(0xFF050F20).withOpacity(0.65)
+        : Colors.white.withOpacity(0.65);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 44),
+      padding: const EdgeInsets.symmetric(vertical: 48),
       decoration: BoxDecoration(
-        color: widget.isDark
-            ? const Color(0xFF050F20).withOpacity(0.70)
-            : Colors.white.withOpacity(0.55),
+        color: backgroundColor,
         border: Border.symmetric(
           horizontal: BorderSide(color: borderColor, width: 1),
         ),
@@ -65,28 +78,43 @@ class _MarqueeSectionState extends State<MarqueeSection>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              letterSpacing: 1.5,
-              color: text3Color,
+              letterSpacing: 2,
+              color: textSecondary,
             ),
           ),
-          const SizedBox(height: 24),
 
-          SizedBox(
-            height: 41,
-            child: AnimatedBuilder(
-              animation: _marqueeController,
-              builder: (_, __) {
-                return MarqueeRow(
-                  items: doubled,
-                  progress: _marqueeController.value,
-                  textStyle: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: text2Color,
-                  ),
-                  dividerColor: borderColor,
-                );
-              },
+          const SizedBox(height: 28),
+
+          // Gradient edge fade effect (premium marquee look)
+          ShaderMask(
+            shaderCallback: (rect) {
+              return LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.black,
+                  Colors.black,
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.08, 0.92, 1.0],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ).createShader(rect);
+            },
+            blendMode: BlendMode.dstIn,
+            child: SizedBox(
+              // height: 44,
+              child: AnimatedBuilder(
+                animation: _marqueeController,
+                builder: (_, __) {
+                  return MarqueeRow(
+                    items: doubled,
+                    progress: _marqueeController.value,
+                    textStyle: 
+                    AppTypography.displaySmall(color: textPrimary).copyWith(),
+                    dividerColor: borderColor,
+                  );
+                },
+              ),
             ),
           ),
         ],

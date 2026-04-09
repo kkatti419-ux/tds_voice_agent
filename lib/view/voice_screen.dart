@@ -292,9 +292,7 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                       StatItem(value: "98%", description: "Success Rate"),
                     ],
                   ),
-                  // _buildFeatures(),
-                  // _buildFeatures()
-                  // _buildComparison(),
+                 
                   ComparisonsSection(
                     comparisons: content.comparisons,
                     isDark: isDark,
@@ -302,8 +300,7 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                     text2Color: text2Color,
                     text3Color: text3Color,
                   ),
-                  // _buildEarthSection(),
-                  // _buildCTABanner(),
+               
                   FeaturesSection(features: content.features, isDark: isDark),
 
                   EarthSection(langPills: [], isDark: isDark),
@@ -332,63 +329,6 @@ class _AgniLandingPageState extends State<AgniLandingPage>
       ),
     );
   }
-
-  // ─── Navbar ───────────────────────────────────────────────────────────────
 }
 
-// ─── Reveal Widget ────────────────────────────────────────────────────────────
 
-// ─── Marquee Track ────────────────────────────────────────────────────────────
-// Replicates CSS @keyframes marquee { from{translateX(0)} to{translateX(-50%)} }
-// Items are NOT fixed-width — they size to content + padding:10px 36px, exactly
-// matching the CSS .marquee-item { padding:10px 36px; flex-shrink:0; border-right }
-
-class _MarqueeScroller extends StatelessWidget {
-  final double progress;
-  final List<Widget> children;
-
-  const _MarqueeScroller({required this.progress, required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomSingleChildLayout(
-      delegate: _MarqueeLayoutDelegate(),
-      child: OverflowBox(
-        alignment: Alignment.centerLeft,
-        maxWidth: double.infinity,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: children
-              .map((child) => _MarqueeItem(progress: progress, child: child))
-              .toList(),
-        ),
-      ),
-    );
-  }
-}
-
-class _MarqueeItem extends StatelessWidget {
-  final double progress;
-  final Widget child;
-  const _MarqueeItem({required this.progress, required this.child});
-
-  @override
-  Widget build(BuildContext context) => child;
-}
-
-class _MarqueeLayoutDelegate extends SingleChildLayoutDelegate {
-  @override
-  bool shouldRelayout(_MarqueeLayoutDelegate old) => false;
-  @override
-  Size getSize(BoxConstraints constraints) =>
-      Size(constraints.maxWidth, constraints.maxHeight);
-  @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
-      BoxConstraints(maxHeight: constraints.maxHeight);
-  @override
-  Offset getPositionForChild(Size size, Size childSize) => Offset.zero;
-}
-
-// Stateful marquee that measures its children and translates
-
-// ─── Glass Card ───────────────────────────────────────────────────────────────

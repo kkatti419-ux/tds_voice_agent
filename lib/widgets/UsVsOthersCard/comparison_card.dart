@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tds_voice_agent/model/comparison_item_model.dart';
-import 'package:tds_voice_agent/view/dashboard_page.dart';
-import 'package:tds_voice_agent/view/voice_screen.dart';
+import 'package:tds_voice_agent/widgets/reveal_widget.dart';
 
 class ComparisonSection extends StatelessWidget {
   final List<ComparisonItem> comparisons;
