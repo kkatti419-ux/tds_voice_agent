@@ -1,17 +1,35 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodel/voice_viewmodel.dart';
 import '../widgets/mic_animation.dart';
 
-class VoiceScreen extends StatelessWidget {
+class VoiceScreen extends StatefulWidget {
   const VoiceScreen({super.key});
+
+  @override
+  State<VoiceScreen> createState() => _VoiceScreenState();
+}
+
+class _VoiceScreenState extends State<VoiceScreen> {
+  bool _didAutostart = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!kIsWeb || _didAutostart) return;
+      _didAutostart = true;
+      context.read<VoiceViewModel>().requestAutostartMic();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final vm = Provider.of<VoiceViewModel>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Voice Agent")),
+      appBar: AppBar(title: const Text('Voice Agent')),
       body: Column(
         children: [
           const SizedBox(height: 16),
@@ -46,16 +64,6 @@ class VoiceScreen extends StatelessWidget {
               isAgentSpeaking: vm.isAgentSpeaking,
             ),
           ),
-
-          // GestureDetector(
-          //   onTapDown: (_) {
-          //     vm.startListening();
-          //   },
-          //   onTapUp: (_) {
-          //     vm.stopListening();
-          //   },
-          //   child: MicAnimation(isListening: vm.isListening),
-          // ),
           const SizedBox(height: 40),
         ],
       ),

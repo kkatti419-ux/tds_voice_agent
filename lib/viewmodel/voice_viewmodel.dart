@@ -14,12 +14,15 @@ import '../service/voice_service.dart';
 import '../socket/socket_manager.dart';
 
 class VoiceViewModel extends ChangeNotifier {
-  void _vmLog(String message) {
-    if (kDebugMode) {
-      debugPrint('[VoiceVM] $message');
-      developer.log(message, name: 'VoiceVM');
-    }
+  void _vmLog(String message, {bool verbose = false}) {
+    if (!kDebugMode) return;
+    if (verbose && !_verboseLogs) return;
+    debugPrint('[VoiceVM] $message');
+    developer.log(message, name: 'VoiceVM');
   }
+
+  /// When false, only important logs (barge-in, mute, errors, session).
+  static const bool _verboseLogs = false;
 
   String _previewJson(Map<String, dynamic> data) {
     try {
@@ -52,25 +55,35 @@ class VoiceViewModel extends ChangeNotifier {
   bool isProcessing = false;
   double amplitudeDb = -120;
 
-  static const Duration _silenceDuration = Duration(seconds: 5);
+  /// User tapped mic off — do not auto-start until they unmute.
+  bool _userMutedMic = false;
+
+  /// Web: waiting for `ai_done` + playback for the current utterance turn.
+  bool _awaitingWebTurn = false;
+
+  static const Duration _silenceDuration = Duration(seconds: 10);
   static const double _speechThresholdDb = -35.0;
+  static const Duration _bargeInHold = Duration(milliseconds: 280);
 
   DateTime _lastSpeechAt = DateTime.fromMillisecondsSinceEpoch(0);
-  bool _hasDetectedSpeech = false;
   bool _autoSendTriggered = false;
   bool _isStopping = false;
   bool _isSending = false;
+  DateTime? _bargeInSpeechStart;
   DateTime _lastUiUpdateAt = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime _lastTextUiUpdateAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   VoiceViewModel() {
     if (kIsWeb) {
-      _vmLog('init: connect WebSocket + subscribe jsonStream/audioStream');
+      _vmLog('init: WebSocket + streams');
       _socket.connect();
       _jsonSub = _socket.jsonStream.listen(_onWebJson);
       _audioSub = _socket.audioStream.listen(_onWebAudio);
     }
   }
+
+  /// Mic is muted by user (tap). Unmute with [startListening].
+  bool get micMutedByUser => _userMutedMic;
 
   @override
   void dispose() {
@@ -80,32 +93,58 @@ class VoiceViewModel extends ChangeNotifier {
   }
 
   String get statusText {
+    if (kIsWeb && _userMutedMic) {
+      return 'Mic off — tap the mic to speak';
+    }
     if (kIsWeb && _serverStatus != null && _serverStatus!.isNotEmpty) {
       return _serverStatus!;
     }
-    if (isListening) return 'Listening (auto-send on silence)';
-    if (isProcessing) return 'Agent is responding...';
-    if (isAgentSpeaking) return 'Agent speaking...';
-    return 'Tap the mic to talk';
+    if (isListening) {
+      return 'Listening… (silence ${_silenceDuration.inSeconds}s sends turn)';
+    }
+    if (isProcessing) return 'Agent is responding…';
+    if (isAgentSpeaking) return 'Agent speaking… (speak to interrupt)';
+    return 'Tap the mic to unmute';
   }
 
+  /// Mic button: mute capture if live, else unmute and start capture.
   Future<void> toggleListening() async {
+    if (kIsWeb) {
+      if (isListening) {
+        await muteMic();
+      } else {
+        _userMutedMic = false;
+        await startListening();
+      }
+      return;
+    }
     if (isListening) {
-      await stopListening(manual: true);
+      await stopListeningNative();
     } else {
       await startListening();
     }
   }
 
+  /// Auto-start from VoiceScreen (option B). Safe to call once.
+  Future<void> requestAutostartMic() async {
+    if (!kIsWeb) return;
+    if (_userMutedMic) return;
+    if (isListening) return;
+    _vmLog('autostart: startListening');
+    await startListening();
+  }
+
   Future<void> startListening() async {
     if (isListening) return;
-    if (_isSending) return;
+    if (!kIsWeb && _isSending) return;
+
+    _userMutedMic = false;
 
     if (kIsWeb) {
-      _vmLog('startListening(web): mic + PCM stream (check SocketManager logs for → PCM)');
+      _vmLog('startListening(web): mic streaming', verbose: true);
       _autoSendTriggered = false;
-      _hasDetectedSpeech = false;
       _lastSpeechAt = DateTime.now();
+      _bargeInSpeechStart = null;
       amplitudeDb = -120;
 
       isListening = true;
@@ -116,7 +155,6 @@ class VoiceViewModel extends ChangeNotifier {
     }
 
     _autoSendTriggered = false;
-    _hasDetectedSpeech = false;
     _lastSpeechAt = DateTime.now();
     amplitudeDb = -120;
 
@@ -126,6 +164,19 @@ class VoiceViewModel extends ChangeNotifier {
     await _recordService.startRecording(
       onAmplitude: _onAmplitude,
     );
+  }
+
+  /// Stop capture only (web). Does not commit an utterance.
+  Future<void> muteMic() async {
+    if (!isListening) return;
+    _vmLog('muteMic: user stopped capture');
+    _userMutedMic = true;
+    isListening = false;
+    _bargeInSpeechStart = null;
+    if (kIsWeb) {
+      _audioWeb.stop();
+    }
+    notifyListeners();
   }
 
   void _onAmplitude(double db) {
@@ -139,19 +190,106 @@ class VoiceViewModel extends ChangeNotifier {
       notifyListeners();
     }
 
+    if (kIsWeb) {
+      _maybeBargeIn(now, db);
+    }
+
     if (db >= _speechThresholdDb) {
-      _hasDetectedSpeech = true;
       _lastSpeechAt = now;
       return;
     }
 
-    if (_hasDetectedSpeech &&
-        !_autoSendTriggered &&
+    if (_awaitingWebTurn) {
+      return;
+    }
+
+    if (!_autoSendTriggered &&
         now.difference(_lastSpeechAt) >= _silenceDuration) {
       _autoSendTriggered = true;
+      _vmLog('silence ${_silenceDuration.inSeconds}s → commit utterance (mic stays on)');
       Future.microtask(() {
-        stopListening(manual: false);
+        if (kIsWeb) {
+          unawaited(_commitWebUtteranceFromSilence());
+        }
       });
+    }
+  }
+
+  void _maybeBargeIn(DateTime now, double db) {
+    if (db < _speechThresholdDb) {
+      _bargeInSpeechStart = null;
+      return;
+    }
+    if (!isAgentSpeaking && !isProcessing && !_awaitingWebTurn) {
+      _bargeInSpeechStart = null;
+      return;
+    }
+
+    _bargeInSpeechStart ??= now;
+    if (now.difference(_bargeInSpeechStart!) < _bargeInHold) {
+      return;
+    }
+
+    _vmLog('barge-in: interrupt + stop playback');
+    _bargeInSpeechStart = null;
+    _socket.interrupt();
+    unawaited(_playerService.stop());
+    isAgentSpeaking = false;
+    notifyListeners();
+  }
+
+  Future<void> _commitWebUtteranceFromSilence() async {
+    if (!kIsWeb) return;
+    if (!isListening) return;
+    if (_awaitingWebTurn) {
+      _vmLog('commit skipped: already awaiting turn');
+      _autoSendTriggered = false;
+      return;
+    }
+    if (_isStopping) return;
+
+    _awaitingWebTurn = true;
+    isProcessing = true;
+    isAgentSpeaking = false;
+
+    messages.add(VoiceMessage(text: '…', isUser: true));
+    messages.add(VoiceMessage(text: '', isUser: false));
+    _userMsgIndex = messages.length - 2;
+    _agentMsgIndex = messages.length - 1;
+
+    _webTurnCompleter = Completer<void>();
+    notifyListeners();
+
+    await _runWebTurnCompletion();
+  }
+
+  Future<void> _runWebTurnCompletion() async {
+    final turn = _webTurnCompleter;
+    try {
+      await _playerService.stop();
+      if (turn != null) {
+        await turn.future.timeout(
+          const Duration(minutes: 2),
+          onTimeout: () {
+            if (!turn.isCompleted) {
+              turn.complete();
+            }
+          },
+        );
+      }
+      await _playerService.waitUntilPlaybackIdle();
+    } finally {
+      isAgentSpeaking = false;
+      isProcessing = false;
+      _awaitingWebTurn = false;
+      _isSending = false;
+      _userMsgIndex = null;
+      _agentMsgIndex = null;
+      _webTurnCompleter = null;
+      _serverStatus = null;
+      _autoSendTriggered = false;
+      _lastSpeechAt = DateTime.now();
+      notifyListeners();
     }
   }
 
@@ -165,11 +303,13 @@ class VoiceViewModel extends ChangeNotifier {
 
   void _onWebJson(Map<String, dynamic> data) {
     final type = data['type'] as String?;
-    _vmLog('json ← type=$type ${_previewJson(data)}');
+    _vmLog('json ← type=$type ${_previewJson(data)}', verbose: true);
 
     switch (type) {
       case 'session_start':
-        _vmLog('session_start (session ready on server)');
+        _vmLog('session_start');
+        break;
+      case 'server_ping':
         break;
       case 'partial':
       case 'transcript':
@@ -208,13 +348,13 @@ class VoiceViewModel extends ChangeNotifier {
         notifyListeners();
         break;
       case 'interrupt':
-        _vmLog('interrupt: stop playback');
-        _playerService.stop();
+        _vmLog('interrupt (server)');
+        unawaited(_playerService.stop());
         isAgentSpeaking = false;
         notifyListeners();
         break;
       default:
-        _vmLog('unhandled JSON type=$type (if this is your main payload, extend VoiceViewModel)');
+        _vmLog('unhandled type=$type');
         break;
     }
   }
@@ -229,7 +369,7 @@ class VoiceViewModel extends ChangeNotifier {
 
   void _onWebAudio(Uint8List chunk) {
     if (chunk.isEmpty) return;
-    _vmLog('audio ← TTS binary ${chunk.length}B (queued to playBytes)');
+    _vmLog('TTS ${chunk.length}B', verbose: true);
     isAgentSpeaking = true;
     notifyListeners();
     _playerService.playBytes(chunk).catchError((e) {
@@ -237,56 +377,14 @@ class VoiceViewModel extends ChangeNotifier {
     });
   }
 
-  Future<void> stopListening({required bool manual}) async {
+  /// Native: stop recording and upload. Web: use [muteMic] or silence commit.
+  Future<void> stopListeningNative() async {
     if (!isListening) return;
     if (_isStopping) return;
-    if (_isSending) return;
 
     _isStopping = true;
-
     isListening = false;
     notifyListeners();
-
-    if (kIsWeb) {
-      _vmLog('stopListening(web): end utterance; waiting for ai_done (or error) to finish turn');
-      _audioWeb.stop();
-      _isStopping = false;
-
-      messages.add(VoiceMessage(text: '…', isUser: true));
-      messages.add(VoiceMessage(text: '', isUser: false));
-      _userMsgIndex = messages.length - 2;
-      _agentMsgIndex = messages.length - 1;
-
-      _isSending = true;
-      isProcessing = true;
-      isAgentSpeaking = false;
-      // Register completer before any await so a fast ai_done cannot be missed.
-      _webTurnCompleter = Completer<void>();
-
-      await _playerService.stop();
-
-      notifyListeners();
-
-      await _webTurnCompleter!.future.timeout(
-        const Duration(minutes: 2),
-        onTimeout: () {
-          final c = _webTurnCompleter;
-          if (c != null && !c.isCompleted) {
-            c.complete();
-          }
-          _webTurnCompleter = null;
-        },
-      );
-      await _playerService.waitUntilPlaybackIdle();
-
-      isAgentSpeaking = false;
-      isProcessing = false;
-      _isSending = false;
-      _userMsgIndex = null;
-      _agentMsgIndex = null;
-      notifyListeners();
-      return;
-    }
 
     final path = await _recordService.stopRecording();
     _isStopping = false;
