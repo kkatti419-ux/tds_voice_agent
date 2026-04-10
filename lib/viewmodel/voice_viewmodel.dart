@@ -12,6 +12,8 @@ import '../model/voice_message.dart';
 import '../service/audio_record_service.dart';
 import '../service/voice_service.dart';
 import '../socket/socket_manager.dart';
+import '../voice/listening_idle_policy.dart';
+import '../voice/voice_session_protocol.dart';
 
 class VoiceViewModel extends ChangeNotifier {
   void _vmLog(String message, {bool verbose = false}) {
@@ -64,7 +66,16 @@ class VoiceViewModel extends ChangeNotifier {
   /// Web: waiting for `ai_done` + playback for the current utterance turn.
   bool _awaitingWebTurn = false;
 
+  /// Accumulates binary TTS for one web turn — many servers send MPEG chunks that are not valid alone in [AudioElement].
+  BytesBuilder? _ttsBuffer;
+
+  VoiceSessionPhase _sessionPhase = VoiceSessionPhase.listening;
+  Timer? _idleNoSpeechTimer;
+  Timer? _continuePromptTimer;
+
   static const Duration _silenceDuration = Duration(seconds: 3);
+  /// Brief wait after [ai_done] so trailing TTS frames are merged before decode/play.
+  static const Duration _ttsPostDoneDrain = Duration(milliseconds: 220);
   static const double _speechThresholdDb = -35.0;
   static const Duration _bargeInHold = Duration(milliseconds: 280);
 
@@ -90,20 +101,41 @@ class VoiceViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _cancelIdleTimers();
     _jsonSub?.cancel();
     _audioSub?.cancel();
     super.dispose();
   }
 
+  /// Idle / continue-session phase (web). See [ListeningIdlePolicy].
+  VoiceSessionPhase get sessionPhase => _sessionPhase;
+
+  /// Show Yes/No when server asked for explicit continue ([session_policy] `ask_user`).
+  bool get showContinueButtons =>
+      kIsWeb && _sessionPhase == VoiceSessionPhase.awaitingContinueAnswer;
+
   String get statusText {
     if (kIsWeb && _userMutedMic) {
       return 'Mic off — tap the mic to speak';
+    }
+    if (kIsWeb && _sessionPhase == VoiceSessionPhase.awaitingPolicy) {
+      return _serverStatus != null && _serverStatus!.isNotEmpty
+          ? _serverStatus!
+          : 'Waiting for session…';
+    }
+    if (kIsWeb && _sessionPhase == VoiceSessionPhase.awaitingContinueAnswer) {
+      return _serverStatus != null && _serverStatus!.isNotEmpty
+          ? _serverStatus!
+          : 'Continue? Tap Yes or No';
     }
     if (kIsWeb && _serverStatus != null && _serverStatus!.isNotEmpty) {
       return _serverStatus!;
     }
     if (isListening) {
-      return 'Listening… (silence ${_silenceDuration.inSeconds}s sends turn)';
+      final idleHint = kIsWeb
+          ? ' · idle ${ListeningIdlePolicy.idleNoSpeech.inSeconds}s → ping server'
+          : '';
+      return 'Listening… (silence ${_silenceDuration.inSeconds}s sends turn)$idleHint';
     }
     if (isProcessing) return 'Agent is responding…';
     if (isAgentSpeaking) return 'Agent speaking… (speak to interrupt)';
@@ -159,11 +191,13 @@ class VoiceViewModel extends ChangeNotifier {
       _lastSpeechAt = DateTime.now();
       _bargeInSpeechStart = null;
       amplitudeDb = -120;
+      _sessionPhase = VoiceSessionPhase.listening;
 
       isListening = true;
       notifyListeners();
 
       _audioWeb.start(onLevel: _onAmplitude);
+      _scheduleIdleNoSpeechTimer();
       return;
     }
 
@@ -183,11 +217,128 @@ class VoiceViewModel extends ChangeNotifier {
   Future<void> muteMic() async {
     if (!isListening) return;
     _vmLog('muteMic: user stopped capture');
+    _cancelIdleTimers();
+    _sessionPhase = VoiceSessionPhase.listening;
     _userMutedMic = true;
     isListening = false;
     _bargeInSpeechStart = null;
     if (kIsWeb) {
       _audioWeb.stop();
+    }
+    notifyListeners();
+  }
+
+  void _cancelIdleTimers() {
+    _idleNoSpeechTimer?.cancel();
+    _idleNoSpeechTimer = null;
+    _continuePromptTimer?.cancel();
+    _continuePromptTimer = null;
+  }
+
+  void _cancelIdleNoSpeechTimer() {
+    _idleNoSpeechTimer?.cancel();
+    _idleNoSpeechTimer = null;
+  }
+
+  /// After [ListeningIdlePolicy.idleNoSpeech] with no speech — sends [VoiceSessionProtocol.clientIdle].
+  void _scheduleIdleNoSpeechTimer() {
+    _cancelIdleNoSpeechTimer();
+    if (!kIsWeb || !isListening || _awaitingWebTurn) return;
+    if (_sessionPhase != VoiceSessionPhase.listening) return;
+
+    _idleNoSpeechTimer = Timer(ListeningIdlePolicy.idleNoSpeech, _onIdleNoSpeechFired);
+    _vmLog(
+      'idle no-speech timer ${ListeningIdlePolicy.idleNoSpeech.inSeconds}s',
+      verbose: true,
+    );
+  }
+
+  void _onIdleNoSpeechFired() {
+    _idleNoSpeechTimer = null;
+    if (!kIsWeb || !isListening || _awaitingWebTurn) return;
+    if (_sessionPhase != VoiceSessionPhase.listening) return;
+
+    _socket.send({
+      'type': VoiceSessionProtocol.clientIdle,
+      'ts': DateTime.now().millisecondsSinceEpoch,
+    });
+    _sessionPhase = VoiceSessionPhase.awaitingPolicy;
+    _vmLog('sent ${VoiceSessionProtocol.clientIdle}', verbose: true);
+    notifyListeners();
+  }
+
+  void _startContinuePromptTimer() {
+    _continuePromptTimer?.cancel();
+    _continuePromptTimer = Timer(
+      ListeningIdlePolicy.continuePromptTimeout,
+      () {
+        if (_sessionPhase != VoiceSessionPhase.awaitingContinueAnswer) return;
+        _vmLog('continue prompt timeout → muteMic', verbose: true);
+        unawaited(muteMic());
+      },
+    );
+  }
+
+  /// UI / voice yes-no: sends [VoiceSessionProtocol.continueIntent].
+  void submitContinueIntent(bool continueListening) {
+    if (!kIsWeb) return;
+    _continuePromptTimer?.cancel();
+    _continuePromptTimer = null;
+
+    _socket.send({
+      'type': VoiceSessionProtocol.continueIntent,
+      'intent':
+          continueListening ? VoiceSessionProtocol.intentYes : VoiceSessionProtocol.intentNo,
+    });
+
+    if (continueListening) {
+      _sessionPhase = VoiceSessionPhase.listening;
+      _serverStatus = null;
+      if (isListening) {
+        _scheduleIdleNoSpeechTimer();
+      }
+      notifyListeners();
+    } else {
+      unawaited(muteMic());
+    }
+  }
+
+  void _onSessionPolicy(Map<String, dynamic> data) {
+    final action = data['action'] as String?;
+    final continueSession = data['continueSession'];
+    final prompt = (data['prompt'] ?? data['text'] ?? '').toString();
+
+    if (continueSession == false || action == 'stop') {
+      unawaited(muteMic());
+      return;
+    }
+
+    if (continueSession == true || action == 'continue') {
+      _sessionPhase = VoiceSessionPhase.listening;
+      _serverStatus = prompt.isNotEmpty ? prompt : null;
+      if (isListening) {
+        _scheduleIdleNoSpeechTimer();
+      }
+      notifyListeners();
+      return;
+    }
+
+    if (action == 'ask_user') {
+      _sessionPhase = VoiceSessionPhase.awaitingContinueAnswer;
+      _serverStatus = prompt.isNotEmpty ? prompt : 'Continue? Tap Yes or No';
+      _startContinuePromptTimer();
+      notifyListeners();
+      return;
+    }
+
+    if (continueSession == null && action == null) {
+      _vmLog('session_policy: no action; ignoring', verbose: true);
+      return;
+    }
+
+    _sessionPhase = VoiceSessionPhase.listening;
+    if (isListening) {
+      _scheduleIdleNoSpeechTimer();
     }
     notifyListeners();
   }
@@ -209,10 +360,22 @@ class VoiceViewModel extends ChangeNotifier {
 
     if (db >= _speechThresholdDb) {
       _lastSpeechAt = now;
+      if (kIsWeb) {
+        if (_sessionPhase == VoiceSessionPhase.awaitingPolicy) {
+          _sessionPhase = VoiceSessionPhase.listening;
+          _serverStatus = null;
+          notifyListeners();
+        }
+        _scheduleIdleNoSpeechTimer();
+      }
       return;
     }
 
     if (_awaitingWebTurn) {
+      return;
+    }
+
+    if (kIsWeb && _sessionPhase != VoiceSessionPhase.listening) {
       return;
     }
 
@@ -254,12 +417,19 @@ class VoiceViewModel extends ChangeNotifier {
   Future<void> _commitWebUtteranceFromSilence() async {
     if (!kIsWeb) return;
     if (!isListening) return;
+    if (_sessionPhase != VoiceSessionPhase.listening) {
+      _autoSendTriggered = false;
+      return;
+    }
     if (_awaitingWebTurn) {
       _vmLog('commit skipped: already awaiting turn');
       _autoSendTriggered = false;
       return;
     }
     if (_isStopping) return;
+
+    _cancelIdleNoSpeechTimer();
+    _ttsBuffer = BytesBuilder();
 
     _awaitingWebTurn = true;
     isProcessing = true;
@@ -290,11 +460,14 @@ class VoiceViewModel extends ChangeNotifier {
           },
         );
       }
+      await Future<void>.delayed(_ttsPostDoneDrain);
+      await _playAccumulatedTtsIfAny();
       await _playerService.waitUntilPlaybackIdle();
     } finally {
       isAgentSpeaking = false;
       isProcessing = false;
       _awaitingWebTurn = false;
+      _ttsBuffer = null;
       _isSending = false;
       _userMsgIndex = null;
       _agentMsgIndex = null;
@@ -303,6 +476,24 @@ class VoiceViewModel extends ChangeNotifier {
       _autoSendTriggered = false;
       _lastSpeechAt = DateTime.now();
       notifyListeners();
+      if (kIsWeb && isListening && !_awaitingWebTurn) {
+        _scheduleIdleNoSpeechTimer();
+      }
+    }
+  }
+
+  Future<void> _playAccumulatedTtsIfAny() async {
+    if (agentTtsMuted) return;
+    final buf = _ttsBuffer;
+    if (buf == null || buf.length == 0) return;
+    final bytes = buf.toBytes();
+    if (bytes.isEmpty) return;
+    isAgentSpeaking = true;
+    notifyListeners();
+    try {
+      await _playerService.playBytes(bytes);
+    } catch (e) {
+      _vmLog('play accumulated TTS failed: $e');
     }
   }
 
@@ -330,6 +521,14 @@ class VoiceViewModel extends ChangeNotifier {
         if (_userMsgIndex != null && text.isNotEmpty) {
           messages[_userMsgIndex!].text = text;
           _notifyTextDebounced();
+        }
+        if (kIsWeb && text.isNotEmpty) {
+          _scheduleIdleNoSpeechTimer();
+        }
+        break;
+      case VoiceSessionProtocol.sessionPolicy:
+        if (kIsWeb) {
+          _onSessionPolicy(data);
         }
         break;
       case 'status':
@@ -382,7 +581,6 @@ class VoiceViewModel extends ChangeNotifier {
 
   void _onWebAudio(Uint8List chunk) {
     if (chunk.isEmpty) return;
-    // Drop binary frames outside an active utterance turn (prevents replay/orphans).
     if (kIsWeb && !_awaitingWebTurn) {
       _vmLog('TTS chunk ignored (no active turn) ${chunk.length}B', verbose: true);
       return;
@@ -391,12 +589,9 @@ class VoiceViewModel extends ChangeNotifier {
       _vmLog('TTS skipped (agent audio muted)', verbose: true);
       return;
     }
-    _vmLog('TTS ${chunk.length}B', verbose: true);
-    isAgentSpeaking = true;
-    notifyListeners();
-    _playerService.playBytes(chunk).catchError((e) {
-      _vmLog('playBytes error: $e');
-    });
+    _vmLog('TTS +${chunk.length}B (buffered)', verbose: true);
+    _ttsBuffer ??= BytesBuilder();
+    _ttsBuffer!.add(chunk);
   }
 
   /// Native: stop recording and upload. Web: use [muteMic] or silence commit.

@@ -326,6 +326,11 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
 
               const SizedBox(height: 26),
 
+              if (vm.showContinueButtons) ...[
+                _continueButtons(vm),
+                const SizedBox(height: 12),
+              ],
+
               _micButton(vm),
 
               const SizedBox(height: 22),
@@ -430,6 +435,62 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _continueButtons(VoiceViewModel vm) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _pillButton(
+          label: 'No',
+          filled: false,
+          onTap: () => vm.submitContinueIntent(false),
+        ),
+        const SizedBox(width: 12),
+        _pillButton(
+          label: 'Yes',
+          filled: true,
+          onTap: () => vm.submitContinueIntent(true),
+        ),
+      ],
+    );
+  }
+
+  Widget _pillButton({
+    required String label,
+    required bool filled,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: filled
+          ? (isDark ? AgniColors.white : AgniColors.black)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: filled
+                  ? Colors.transparent
+                  : (isDark ? AgniColors.white12 : AgniColors.black26),
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: filled
+                  ? (isDark ? AgniColors.black : AgniColors.white)
+                  : (isDark ? AgniColors.white70 : AgniColors.black54),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ),
     );
   }
