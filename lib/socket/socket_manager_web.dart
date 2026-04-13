@@ -14,7 +14,8 @@ class SocketManager {
 
   WebSocket? _socket;
 
-  static const String _defaultWsUrl = 'wss://demo.nitya.ai/new/ws';
+  static const String _defaultWsUrl =
+      'ws://004vrvubdcz0ge-9002.proxy.runpod.net/new/ws';
   static const String _wsUrl =
       String.fromEnvironment('VOICE_WS_URL', defaultValue: _defaultWsUrl);
 
@@ -102,7 +103,7 @@ class SocketManager {
           _jsonInCount++;
           final t = map['type'];
           _log(
-            '← JSON #$_jsonInCount type=$t ${_preview(raw)}',
+            '← JSON preview #$_jsonInCount type=$t ${_preview(raw)}',
           );
           _handleJson(map);
         } catch (e, st) {
@@ -121,15 +122,20 @@ class SocketManager {
 
     _socket!.onClose.listen((CloseEvent e) {
       _log(
-        'onClose code=${e.code} reason=${e.reason} wasClean=${e.wasClean} → reconnect in 2s',
+        '########onClose code=${e.code} reason=${e.reason} wasClean=${e.wasClean} → reconnect in 2s',
       );
       Future.delayed(const Duration(seconds: 2), connect);
     });
   }
 
+  /// Keepalive: many voice backends send periodic JSON `server_ping`; we must reply with `pong`
+  /// or the server may close the socket. Handled here so all listeners still see the frame if needed.
   void _handleJson(Map<String, dynamic> data) {
-    if (data['type'] == 'server_ping') {
-      _log('server_ping → sending pong');
+    final t = data['type']?.toString();
+    if (t == 'server_ping' || t == 'ping') {
+      _log(
+        '[Keepalive] server JSON ping (type=$t) → sending {"type":"pong"}',
+      );
       send({'type': 'pong'});
     }
     _jsonController.add(data);

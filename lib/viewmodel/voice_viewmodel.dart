@@ -87,6 +87,9 @@ class VoiceViewModel extends ChangeNotifier {
   DateTime _lastUiUpdateAt = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime _lastTextUiUpdateAt = DateTime.fromMillisecondsSinceEpoch(0);
 
+  /// Throttle logs when binary TTS arrives outside an active turn.
+  DateTime? _lastVoiceAudioDropLogAt;
+
   VoiceViewModel() {
     if (kIsWeb) {
       _vmLog('init: WebSocket + streams');
@@ -483,16 +486,31 @@ class VoiceViewModel extends ChangeNotifier {
   }
 
   Future<void> _playAccumulatedTtsIfAny() async {
-    if (agentTtsMuted) return;
+    if (agentTtsMuted) {
+      debugPrint(
+        '[VoiceAudio] skip play: agentTtsMuted=true (toggle agent speaker to hear TTS)',
+      );
+      return;
+    }
     final buf = _ttsBuffer;
-    if (buf == null || buf.length == 0) return;
+    if (buf == null || buf.length == 0) {
+      debugPrint(
+        '[VoiceAudio] skip play: buffer empty (server sent no binary TTS this turn, or chunks dropped — check logs above)',
+      );
+      return;
+    }
     final bytes = buf.toBytes();
-    if (bytes.isEmpty) return;
+    if (bytes.isEmpty) {
+      debugPrint('[VoiceAudio] skip play: toBytes() empty');
+      return;
+    }
+    debugPrint('[VoiceAudio] play accumulated TTS: bytes=${bytes.length}');
     isAgentSpeaking = true;
     notifyListeners();
     try {
       await _playerService.playBytes(bytes);
     } catch (e) {
+      debugPrint('[VoiceAudio] playBytes failed: $e');
       _vmLog('play accumulated TTS failed: $e');
     }
   }
@@ -582,6 +600,14 @@ class VoiceViewModel extends ChangeNotifier {
   void _onWebAudio(Uint8List chunk) {
     if (chunk.isEmpty) return;
     if (kIsWeb && !_awaitingWebTurn) {
+      final now = DateTime.now();
+      if (_lastVoiceAudioDropLogAt == null ||
+          now.difference(_lastVoiceAudioDropLogAt!) >= const Duration(milliseconds: 800)) {
+        _lastVoiceAudioDropLogAt = now;
+        debugPrint(
+          '[VoiceAudio] dropped binary ${chunk.length}B: no active turn (_awaitingWebTurn=false) — often arrives after ai_done; fix timing or trailing window',
+        );
+      }
       _vmLog('TTS chunk ignored (no active turn) ${chunk.length}B', verbose: true);
       return;
     }

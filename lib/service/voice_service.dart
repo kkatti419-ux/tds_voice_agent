@@ -9,7 +9,7 @@
 // class VoiceService {
 //   static const String _wsUrl = String.fromEnvironment(
 //     "VOICE_WS_URL",
-//     defaultValue: "wss://demo.nitya.ai/new/ws",
+//     defaultValue: "ws://axy41ylzzdg4uh-9001.proxy.runpod.net/new/ws",
 //   );
 
 //   void _log(String message) {
@@ -137,8 +137,8 @@ import 'package:universal_html/html.dart' as html;
 
 class VoiceService {
   static const String _wsUrl = String.fromEnvironment(
-    "wss://demo.nitya.ai/new/ws",
-    defaultValue: "wss://demo.nitya.ai/new/ws",
+    'VOICE_WS_URL',
+    defaultValue: 'ws://004vrvubdcz0ge-9002.proxy.runpod.net/new/ws',
   );
 
   void _log(String message) {
