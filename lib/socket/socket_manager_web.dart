@@ -15,7 +15,7 @@ class SocketManager {
   WebSocket? _socket;
 
   static const String _defaultWsUrl =
-      'ws://004vrvubdcz0ge-9002.proxy.runpod.net/new/ws';
+      'ws://zn92ktgasdnean-9002.proxy.runpod.net/new/ws';
   static const String _wsUrl =
       String.fromEnvironment('VOICE_WS_URL', defaultValue: _defaultWsUrl);
 

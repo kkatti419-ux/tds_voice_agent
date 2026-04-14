@@ -5,7 +5,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:tds_voice_agent/service/audio_palyer_service.dart';
+import 'package:tds_voice_agent/service/audio_palyer_service.dart'
+    show AudioPlayerService;
 
 import '../audio/audio_web.dart';
 import '../model/voice_message.dart';
@@ -68,6 +69,10 @@ class VoiceViewModel extends ChangeNotifier {
 
   /// Accumulates binary TTS for one web turn — many servers send MPEG chunks that are not valid alone in [AudioElement].
   BytesBuilder? _ttsBuffer;
+
+  /// After [ai_done], accept trailing binary frames for a short window (ordering race with server).
+  DateTime? _ttsGraceUntil;
+  static const Duration _ttsGraceAfterDone = Duration(milliseconds: 600);
 
   VoiceSessionPhase _sessionPhase = VoiceSessionPhase.listening;
   Timer? _idleNoSpeechTimer;
@@ -201,6 +206,7 @@ class VoiceViewModel extends ChangeNotifier {
 
       _audioWeb.start(onLevel: _onAmplitude);
       _scheduleIdleNoSpeechTimer();
+      unawaited(AudioPlayerService.resumeAudioContextIfNeeded());
       return;
     }
 
@@ -226,9 +232,20 @@ class VoiceViewModel extends ChangeNotifier {
     isListening = false;
     _bargeInSpeechStart = null;
     if (kIsWeb) {
+      _cancelWebTurnForInterrupt('mute_mic');
       _audioWeb.stop();
     }
     notifyListeners();
+  }
+
+  /// Unblocks [_runWebTurnCompletion] and clears TTS buffer after interrupt / mute.
+  void _cancelWebTurnForInterrupt(String reason) {
+    if (!kIsWeb) return;
+    debugPrint('[VoiceAudio] cancel web turn: $reason');
+    _ttsBuffer = null;
+    _ttsGraceUntil = null;
+    unawaited(_playerService.stop());
+    _completeWebTurnIfPending();
   }
 
   void _cancelIdleTimers() {
@@ -399,7 +416,10 @@ class VoiceViewModel extends ChangeNotifier {
       _bargeInSpeechStart = null;
       return;
     }
-    if (!isAgentSpeaking && !isProcessing && !_awaitingWebTurn) {
+    // Mic-driven interrupt only while assistant TTS is actually playing. Waiting
+    // for the server (_awaitingWebTurn / isProcessing) plus ambient noise used to
+    // fire barge-in and clear [_ttsBuffer], producing text but no audio.
+    if (!isAgentSpeaking) {
       _bargeInSpeechStart = null;
       return;
     }
@@ -412,7 +432,7 @@ class VoiceViewModel extends ChangeNotifier {
     _vmLog('barge-in: interrupt + stop playback');
     _bargeInSpeechStart = null;
     _socket.interrupt();
-    unawaited(_playerService.stop());
+    _cancelWebTurnForInterrupt('barge_in');
     isAgentSpeaking = false;
     notifyListeners();
   }
@@ -470,6 +490,7 @@ class VoiceViewModel extends ChangeNotifier {
       isAgentSpeaking = false;
       isProcessing = false;
       _awaitingWebTurn = false;
+      _ttsGraceUntil = null;
       _ttsBuffer = null;
       _isSending = false;
       _userMsgIndex = null;
@@ -564,6 +585,7 @@ class VoiceViewModel extends ChangeNotifier {
       case 'ai_done':
         isProcessing = false;
         _serverStatus = null;
+        _ttsGraceUntil = DateTime.now().add(_ttsGraceAfterDone);
         _completeWebTurnIfPending();
         notifyListeners();
         break;
@@ -574,12 +596,13 @@ class VoiceViewModel extends ChangeNotifier {
         }
         isProcessing = false;
         _serverStatus = null;
+        _ttsGraceUntil = DateTime.now().add(_ttsGraceAfterDone);
         _completeWebTurnIfPending();
         notifyListeners();
         break;
       case 'interrupt':
         _vmLog('interrupt (server)');
-        unawaited(_playerService.stop());
+        _cancelWebTurnForInterrupt('server_interrupt');
         isAgentSpeaking = false;
         notifyListeners();
         break;
@@ -599,13 +622,15 @@ class VoiceViewModel extends ChangeNotifier {
 
   void _onWebAudio(Uint8List chunk) {
     if (chunk.isEmpty) return;
-    if (kIsWeb && !_awaitingWebTurn) {
+    final inGrace = _ttsGraceUntil != null &&
+        DateTime.now().isBefore(_ttsGraceUntil!);
+    if (kIsWeb && !_awaitingWebTurn && !inGrace) {
       final now = DateTime.now();
       if (_lastVoiceAudioDropLogAt == null ||
           now.difference(_lastVoiceAudioDropLogAt!) >= const Duration(milliseconds: 800)) {
         _lastVoiceAudioDropLogAt = now;
         debugPrint(
-          '[VoiceAudio] dropped binary ${chunk.length}B: no active turn (_awaitingWebTurn=false) — often arrives after ai_done; fix timing or trailing window',
+          '[VoiceAudio] dropped binary ${chunk.length}B: no active turn and grace expired',
         );
       }
       _vmLog('TTS chunk ignored (no active turn) ${chunk.length}B', verbose: true);
