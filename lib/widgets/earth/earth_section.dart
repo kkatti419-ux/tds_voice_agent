@@ -204,8 +204,7 @@ class _EarthSectionState extends State<EarthSection>
 
   Color get titleColor => isDark ? AgniColors.white : AgniColors.black;
 
-  Color get subtitleColor =>
-      isDark ? AgniColors.white70 : AgniColors.black54;
+  Color get subtitleColor => isDark ? AgniColors.white70 : AgniColors.black54;
 
   LinearGradient get accentGradient =>
       const LinearGradient(colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)]);
@@ -242,7 +241,7 @@ class _EarthSectionState extends State<EarthSection>
                 const TextSpan(text: "Built in Bangalore.\nDelivered across "),
 
                 WidgetSpan(
-                    child: ShaderMask(
+                  child: ShaderMask(
                     shaderCallback: (b) => accentGradient.createShader(b),
                     child: Text(
                       "the world.",
@@ -276,7 +275,7 @@ class _EarthSectionState extends State<EarthSection>
           /// GLOBE
           AnimatedBuilder(
             animation: _globeController,
-            builder: (_, __) {
+            builder: (_, _) {
               return CustomPaint(
                 size: const Size(280, 280),
                 painter: EarthGlobePainter(

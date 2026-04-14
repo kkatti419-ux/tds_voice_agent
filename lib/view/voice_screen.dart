@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:tds_voice_agent/model/agni_content.dart';
 import 'package:tds_voice_agent/routing/app_routes.dart';
-import 'package:tds_voice_agent/theme/theme_mode_notifier.dart';
 import 'package:tds_voice_agent/widgets/earth/earth_section.dart';
 import 'package:tds_voice_agent/widgets/feature/features_section.dart';
 import 'package:tds_voice_agent/widgets/footer_section.dart';
@@ -13,11 +12,17 @@ import 'package:tds_voice_agent/widgets/background_painters.dart';
 import 'package:tds_voice_agent/widgets/stats/stats_section.dart';
 
 import '../core/agni_colors.dart';
-import 'package:tds_voice_agent/model/agni_content.dart';
 import '../theme/app_typography.dart';
 
-class VoiceScreen extends StatelessWidget {
+class VoiceScreen extends StatefulWidget {
   const VoiceScreen({super.key});
+
+  @override
+  State<VoiceScreen> createState() => _VoiceScreenState();
+}
+
+class _VoiceScreenState extends State<VoiceScreen> {
+  bool _isDark = true;
 
   static final AgniContent _defaultContent = AgniContent(
     navItems: const ['Solutions', 'Industries', 'Platform', 'Pricing'],
@@ -76,11 +81,10 @@ class VoiceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AgniLandingPage(
       content: _defaultContent,
-      isDark: isDark,
-      onToggleTheme: () => context.read<ThemeModeNotifier>().toggle(),
+      isDark: _isDark,
+      onToggleTheme: () => setState(() => _isDark = !_isDark),
     );
   }
 }
@@ -216,13 +220,13 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Material(
-                      color: AgniColors.transparent,
+                      color: Colors.transparent,
                       child: InkWell(
                         onTap: () {
                           Navigator.of(context).pop();
-                          Navigator.of(context).pushNamed(
-                            AppRoutes.contactSales,
-                          );
+                          Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.contactSales);
                         },
                         borderRadius: BorderRadius.circular(24),
                         child: Container(
@@ -237,7 +241,9 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                           alignment: Alignment.center,
                           child: Text(
                             'Contact sales →',
-                            style: AppTypography.ctaCompact(color: AgniColors.white),
+                            style: AppTypography.ctaCompact(
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -318,14 +324,8 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                               value: "2,100+",
                               description: "Businesses",
                             ),
-                            StatItem(
-                              value: "12+",
-                              description: "Countries",
-                            ),
-                            StatItem(
-                              value: "98%",
-                              description: "Success Rate",
-                            ),
+                            StatItem(value: "12+", description: "Countries"),
+                            StatItem(value: "98%", description: "Success Rate"),
                           ],
                         ),
                         ComparisonsSection(
@@ -366,12 +366,10 @@ class _AgniLandingPageState extends State<AgniLandingPage>
     return Positioned.fill(
       child: AnimatedBuilder(
         animation: _globeController,
-        builder: (_, __) => CustomPaint(
+        builder: (_, _) => CustomPaint(
           painter: BackgroundPainter(isDark: isDark, t: _globeController.value),
         ),
       ),
     );
   }
 }
-
-

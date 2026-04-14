@@ -98,7 +98,7 @@ class _HeroSectionState extends State<HeroSection>
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _globeController,
-              builder: (_, __) => CustomPaint(
+              builder: (_, _) => CustomPaint(
                 painter: GlobeBgPainter(
                   isDark: isDark,
                   t: _globeController.value,
@@ -278,8 +278,7 @@ class _HeroSectionState extends State<HeroSection>
   Widget _buildButtons({bool isMobile = false}) {
     void openExpert() =>
         Navigator.of(context).pushNamed(AppRoutes.talkToExpert);
-    void openDemo() =>
-        Navigator.of(context).pushNamed(AppRoutes.seeHowItWorks);
+    void openDemo() => Navigator.of(context).pushNamed(AppRoutes.seeHowItWorks);
 
     if (isMobile) {
       return Column(
@@ -367,7 +366,7 @@ class _HeroSectionState extends State<HeroSection>
   Widget _buildPulseDot() {
     return AnimatedBuilder(
       animation: _globeController,
-      builder: (_, __) {
+      builder: (_, _) {
         final t = _globeController.value;
         final scale = 1.0 + (t - 0.5).abs() * 0.8;
         final opacity = 1.0 - (t - 0.5).abs() * 1.2;
@@ -408,7 +407,7 @@ class _HeroSectionState extends State<HeroSection>
       children: tags.asMap().entries.map((e) {
         return AnimatedBuilder(
           animation: _floatController,
-          builder: (_, __) {
+          builder: (_, _) {
             final delay = e.key * 0.4;
             final t = ((_floatController.value + delay) % 1.0);
             final offset = math.sin(t * math.pi * 2) * 7;
@@ -501,7 +500,7 @@ class _HeroSectionState extends State<HeroSection>
     final delays = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
     return AnimatedBuilder(
       animation: _waveController,
-      builder: (_, __) => SizedBox(
+      builder: (_, _) => SizedBox(
         height: 48,
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -535,7 +534,7 @@ class _HeroSectionState extends State<HeroSection>
   Widget _buildTalkingAvatar() {
     return AnimatedBuilder(
       animation: _waveController,
-      builder: (_, __) {
+      builder: (_, _) {
         final pulse = 0.08 + (_waveController.value * 0.12);
         return Stack(
           alignment: Alignment.center,
@@ -595,7 +594,7 @@ class _HeroSectionState extends State<HeroSection>
   Widget _buildFloatingCard(String stat, String label, double delayFactor) {
     return AnimatedBuilder(
       animation: _floatController,
-      builder: (_, __) {
+      builder: (_, _) {
         final t =
             ((_floatController.value * (1 / 4.0)) + delayFactor / 4.0) % 1.0;
         final offset = math.sin(t * math.pi * 2) * 7;
@@ -654,7 +653,11 @@ class _HeroSectionState extends State<HeroSection>
     );
   }
 
-  Widget _gradientButton(String label, {bool small = false, VoidCallback? onTap}) {
+  Widget _gradientButton(
+    String label, {
+    bool small = false,
+    VoidCallback? onTap,
+  }) {
     final child = Container(
       alignment: Alignment.center,
       padding: EdgeInsets.symmetric(
@@ -675,7 +678,7 @@ class _HeroSectionState extends State<HeroSection>
       child: Text(
         label,
         style: TextStyle(
-                      color: AgniColors.white,
+          color: AgniColors.white,
           fontSize: small ? 14 : 16,
           fontWeight: FontWeight.w600,
         ),

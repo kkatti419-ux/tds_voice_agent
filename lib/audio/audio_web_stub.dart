@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 class AudioWeb {
   void start({void Function(double levelDb)? onLevel}) {
     // No-op on non-web platforms.
@@ -9,4 +7,3 @@ class AudioWeb {
     // No-op on non-web platforms.
   }
 }
-

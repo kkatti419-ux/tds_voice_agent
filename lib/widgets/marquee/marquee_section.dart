@@ -33,9 +33,11 @@ class _MarqueeSectionState extends State<MarqueeSection>
     super.dispose();
   }
 
-  Color get textPrimary => widget.isDark ? AgniColors.white70 : AgniColors.black87;
+  Color get textPrimary =>
+      widget.isDark ? AgniColors.white70 : AgniColors.black87;
 
-  Color get textSecondary => widget.isDark ? AgniColors.white54 : AgniColors.black54;
+  Color get textSecondary =>
+      widget.isDark ? AgniColors.white54 : AgniColors.black54;
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +99,7 @@ class _MarqueeSectionState extends State<MarqueeSection>
               // height: 44,
               child: AnimatedBuilder(
                 animation: _marqueeController,
-                builder: (_, __) {
+                builder: (_, _) {
                   return MarqueeRow(
                     items: doubled,
                     progress: _marqueeController.value,

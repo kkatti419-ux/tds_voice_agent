@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:developer' as developer;
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_sound/flutter_sound.dart';
@@ -57,7 +56,9 @@ class AudioPlayerService {
       await audio.play();
       return;
     } catch (e) {
-      _voiceAudioLog('$context: play() failed ($e) — retry after AudioContext resume');
+      _voiceAudioLog(
+        '$context: play() failed ($e) — retry after AudioContext resume',
+      );
       await resumeAudioContextIfNeeded();
       await audio.play();
       _voiceAudioLog('$context: play() OK after retry');
@@ -268,10 +269,7 @@ class AudioPlayerService {
         b[3] == 0xa3) {
       return 'audio/webm';
     }
-    if (b.length >= 3 &&
-        b[0] == 0x49 &&
-        b[1] == 0x44 &&
-        b[2] == 0x33) {
+    if (b.length >= 3 && b[0] == 0x49 && b[1] == 0x44 && b[2] == 0x33) {
       return 'audio/mpeg';
     }
     if (b.length >= 2 && b[0] == 0xff && (b[1] & 0xe0) == 0xe0) {
@@ -299,10 +297,10 @@ class AudioPlayerService {
 
   Future<void> _playWebBytes(Uint8List bytes) async {
     final mime = _guessAudioMime(bytes);
-    final head4 = bytes.length >= 4 ? _headerHex(bytes, 4) : _headerHex(bytes, bytes.length);
-    _voiceAudioLog(
-      'playBytes: len=${bytes.length} mime=$mime header4=$head4',
-    );
+    final head4 = bytes.length >= 4
+        ? _headerHex(bytes, 4)
+        : _headerHex(bytes, bytes.length);
+    _voiceAudioLog('playBytes: len=${bytes.length} mime=$mime header4=$head4');
 
     final done = Completer<void>();
     _activePlaybackCompleter = done;

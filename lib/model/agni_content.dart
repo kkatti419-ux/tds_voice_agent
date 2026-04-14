@@ -1,5 +1,6 @@
 /// Landing / marketing content models (stats, features, comparisons, hero meta).
 /// Single source of truth for the Technodysis home experience.
+library;
 
 class StatItem {
   final String value;
