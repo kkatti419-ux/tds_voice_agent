@@ -138,7 +138,7 @@ import 'package:universal_html/html.dart' as html;
 class VoiceService {
   static const String _wsUrl = String.fromEnvironment(
     'VOICE_WS_URL',
-    defaultValue: 'ws://zn92ktgasdnean-9002.proxy.runpod.net/new/ws',
+    defaultValue: 'ws://192.168.0.20:9876/new/ws',
   );
 
   void _log(String message) {
@@ -259,7 +259,6 @@ class VoiceService {
               onTextDelta(delta);
               _log('onTextDelta callback executed');
             }
-
             /// AUDIO STREAM
             else if (type == "audio_url") {
               final url = (data["audio_url"] ?? "").toString();
@@ -271,7 +270,6 @@ class VoiceService {
                 _log('onAudioUrl callback executed');
               }
             }
-
             /// DONE SIGNAL
             else if (type == "done") {
               _log('Server sent DONE signal');
@@ -281,7 +279,6 @@ class VoiceService {
                 _log('Done completer completed');
               }
             }
-
             /// ERROR SIGNAL
             else if (type == "error") {
               final err = data["error"];
@@ -290,9 +287,7 @@ class VoiceService {
               if (!done.isCompleted) {
                 done.completeError(err);
               }
-            }
-
-            else {
+            } else {
               _log('Unknown message type received, trying generic parser');
 
               // Generic text fields used by many websocket APIs.
@@ -339,7 +334,8 @@ class VoiceService {
               }
 
               // Generic done flags.
-              final doneFlag = data["done"] == true ||
+              final doneFlag =
+                  data["done"] == true ||
                   data["is_final"] == true ||
                   data["final"] == true ||
                   data["event"] == "done";

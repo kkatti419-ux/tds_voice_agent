@@ -14,10 +14,11 @@ class SocketManager {
 
   WebSocket? _socket;
 
-  static const String _defaultWsUrl =
-      'ws://zn92ktgasdnean-9002.proxy.runpod.net/new/ws';
-  static const String _wsUrl =
-      String.fromEnvironment('VOICE_WS_URL', defaultValue: _defaultWsUrl);
+  static const String _defaultWsUrl = 'ws://192.168.0.20:9876/new/ws';
+  static const String _wsUrl = String.fromEnvironment(
+    'VOICE_WS_URL',
+    defaultValue: _defaultWsUrl,
+  );
 
   final _jsonController = StreamController<Map<String, dynamic>>.broadcast();
   final _audioController = StreamController<Uint8List>.broadcast();
@@ -73,7 +74,9 @@ class SocketManager {
     if (_socket != null) {
       final state = _socket!.readyState;
       if (state == WebSocket.OPEN || state == WebSocket.CONNECTING) {
-        _log('connect skipped (already ${state == WebSocket.OPEN ? "OPEN" : "CONNECTING"}) url=$_wsUrl');
+        _log(
+          'connect skipped (already ${state == WebSocket.OPEN ? "OPEN" : "CONNECTING"}) url=$_wsUrl',
+        );
         return;
       }
     }
@@ -102,9 +105,7 @@ class SocketManager {
               : Map<String, dynamic>.from(decoded as Map);
           _jsonInCount++;
           final t = map['type'];
-          _log(
-            '← JSON preview #$_jsonInCount type=$t ${_preview(raw)}',
-          );
+          _log('← JSON preview #$_jsonInCount type=$t ${_preview(raw)}');
           _handleJson(map);
         } catch (e, st) {
           _log('jsonDecode failed: $e raw=${_preview(raw)} $st');
@@ -133,9 +134,7 @@ class SocketManager {
   void _handleJson(Map<String, dynamic> data) {
     final t = data['type']?.toString();
     if (t == 'server_ping' || t == 'ping') {
-      _log(
-        '[Keepalive] server JSON ping (type=$t) → sending {"type":"pong"}',
-      );
+      _log('[Keepalive] server JSON ping (type=$t) → sending {"type":"pong"}');
       send({'type': 'pong'});
     }
     _jsonController.add(data);
@@ -165,7 +164,9 @@ class SocketManager {
     if (s != null && s.readyState == WebSocket.OPEN) {
       _binaryOutCount++;
       if (_binaryOutCount <= 3 || _binaryOutCount % 100 == 0) {
-        _log('→ PCM #$_binaryOutCount ${bytes.length}B (total binary frames sent)');
+        _log(
+          '→ PCM #$_binaryOutCount ${bytes.length}B (total binary frames sent)',
+        );
       }
       s.send(bytes);
     } else {
@@ -185,4 +186,3 @@ class SocketManager {
     send({'type': 'interrupt'});
   }
 }
-

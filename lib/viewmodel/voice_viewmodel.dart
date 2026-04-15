@@ -102,6 +102,7 @@ class VoiceViewModel extends ChangeNotifier {
 
   /// Throttle logs when binary TTS arrives outside an active turn.
   DateTime? _lastVoiceAudioDropLogAt;
+  bool _interruptPlayback = false;
 
   VoiceViewModel() {
     if (kIsWeb) {
@@ -245,13 +246,31 @@ class VoiceViewModel extends ChangeNotifier {
   }
 
   /// Unblocks [_runWebTurnCompletion] and clears TTS buffer after interrupt / mute.
+  // void _cancelWebTurnForInterrupt(String reason) {
+  //   if (!kIsWeb) return;
+  //   debugPrint('[VoiceAudio] cancel web turn: $reason');
+  //   _ttsBuffer = null;
+  //   _ttsGraceUntil = null;
+  //   unawaited(_playerService.stop());
+  //   _completeWebTurnIfPending();
+  // }
   void _cancelWebTurnForInterrupt(String reason) {
     if (!kIsWeb) return;
+
     debugPrint('[VoiceAudio] cancel web turn: $reason');
-    _ttsBuffer = null;
-    _ttsGraceUntil = null;
+
+    _interruptPlayback = true; // ✅ ADD THIS
+
+    _audioBufferClear();
+    _audioQueue.clear(); // ✅ IMPORTANT
+
     unawaited(_playerService.stop());
     _completeWebTurnIfPending();
+  }
+
+  void _audioBufferClear() {
+    _ttsBuffer = null;
+    _ttsGraceUntil = null;
   }
 
   void _cancelIdleTimers() {
@@ -448,6 +467,14 @@ class VoiceViewModel extends ChangeNotifier {
 
   Future<void> _commitWebUtteranceFromSilence() async {
     if (!kIsWeb) return;
+
+    _interruptPlayback = false;
+    _audioQueue.clear();
+
+    _ttsBuffer = BytesBuilder(); // ✅ ADD
+    _ttsGraceUntil = null; // ✅ ADD
+
+    await _playerService.stop(); // ✅ ADD (important)
 
     // ✅ RESET DEBUG
     _audioChunkCount = 0;
@@ -721,17 +748,43 @@ class VoiceViewModel extends ChangeNotifier {
 
     try {
       while (_audioQueue.isNotEmpty) {
+        if (_interruptPlayback) {
+          _audioQueue.clear();
+          break;
+        }
+
         final chunk = _audioQueue.removeAt(0);
 
         await _playerService.playBytes(chunk);
 
-        // IMPORTANT: ensure one finishes before next starts
+        if (_interruptPlayback) break;
+
         await _playerService.waitUntilPlaybackIdle();
       }
     } finally {
       _isPlayingQueue = false;
     }
   }
+
+  // Future<void> _processAudioQueue() async {
+  //   if (_isPlayingQueue) return;
+  //   if (_audioQueue.isEmpty) return;
+
+  //   _isPlayingQueue = true;
+
+  //   try {
+  //     while (_audioQueue.isNotEmpty) {
+  //       final chunk = _audioQueue.removeAt(0);
+
+  //       await _playerService.playBytes(chunk);
+
+  //       // IMPORTANT: ensure one finishes before next starts
+  //       await _playerService.waitUntilPlaybackIdle();
+  //     }
+  //   } finally {
+  //     _isPlayingQueue = false;
+  //   }
+  // }
   // void _onWebAudio(Uint8List chunk) {
   //   if (chunk.isEmpty) return;
 
