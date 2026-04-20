@@ -246,6 +246,7 @@ import 'package:provider/provider.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
 import 'package:tds_voice_agent/theme/app_typography.dart';
 import 'package:tds_voice_agent/viewmodel/voice_viewmodel.dart';
+import 'package:tds_voice_agent/widgets/voice%20orb/voice_orb.dart';
 
 class VoicePhoneWidget extends StatefulWidget {
   final bool isDark;
@@ -317,7 +318,13 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
 
               const SizedBox(height: 30),
 
-              Expanded(child: _orb(vm)),
+              // Expanded(child: _orb(vm)),
+              Expanded(
+                child: VoiceOrb(
+                  speaking: vm.isAgentSpeaking,
+                  listening: vm.isListening,
+                ),
+              ),
 
               _pricingCard(),
 
@@ -339,54 +346,57 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
   }
 
   /// Orb animation (monochrome halo breathing)
-  Widget _orb(VoiceViewModel vm) {
-    final speaking = vm.isAgentSpeaking;
-    final listening = vm.isListening;
+  ///
+  ///
 
-    return AnimatedBuilder(
-      animation: _orbController,
-      builder: (_, _) {
-        final pulse = math.sin(_orbController.value * math.pi);
+  // Widget _orb(VoiceViewModel vm) {
+  //   final speaking = vm.isAgentSpeaking;
+  //   final listening = vm.isListening;
 
-        double scale = 1;
+  //   return AnimatedBuilder(
+  //     animation: _orbController,
+  //     builder: (_, _) {
+  //       final pulse = math.sin(_orbController.value * math.pi);
 
-        if (speaking) {
-          scale = 1.08 + (.12 * pulse);
-        } else if (listening) {
-          scale = .92 + (.08 * pulse);
-        }
+  //       double scale = 1;
 
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            /// outer halo ring
-            Container(
-              width: 240 + pulse * 16,
-              height: 240 + pulse * 16,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDark ? AgniColors.white12 : AgniColors.black12,
-                  width: 1.4,
-                ),
-              ),
-            ),
+  //       if (speaking) {
+  //         scale = 1.08 + (.12 * pulse);
+  //       } else if (listening) {
+  //         scale = .92 + (.08 * pulse);
+  //       }
 
-            /// center orb
-            Transform.scale(
-              scale: scale,
-              child: Image.asset(
-                "assets/images/little_sun.png",
-                width: 190,
-                // color: isDark ? Colors.white : Colors.black,
-                colorBlendMode: BlendMode.srcIn,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  //       return Stack(
+  //         alignment: Alignment.center,
+  //         children: [
+  //           /// outer halo ring
+  //           Container(
+  //             width: 240 + pulse * 16,
+  //             height: 240 + pulse * 16,
+  //             decoration: BoxDecoration(
+  //               shape: BoxShape.circle,
+  //               border: Border.all(
+  //                 color: isDark ? AgniColors.white12 : AgniColors.black12,
+  //                 width: 1.4,
+  //               ),
+  //             ),
+  //           ),
+
+  //           /// center orb
+  //           Transform.scale(
+  //             scale: scale,
+  //             child: Image.asset(
+  //               "assets/images/little_sun.png",
+  //               width: 190,
+  //               // color: isDark ? Colors.white : Colors.black,
+  //               colorBlendMode: BlendMode.srcIn,
+  //             ),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   /// Pricing badge (clean minimal chip style)
   Widget _pricingCard() {

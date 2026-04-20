@@ -272,20 +272,38 @@ class _EarthSectionState extends State<EarthSection>
 
           const SizedBox(height: 48),
 
-          /// GLOBE
           AnimatedBuilder(
             animation: _globeController,
-            builder: (_, _) {
-              return CustomPaint(
-                size: const Size(280, 280),
-                painter: EarthGlobePainter(
-                  t: _globeController.value,
-                  isDark: isDark,
-                ),
+            builder: (_, child) {
+              return Transform.rotate(
+                angle: _globeController.value * 2 * 3.1416, // full rotation
+                child: child,
               );
             },
+            child: SizedBox(
+              width: 400,
+              height: 400,
+              child: Image.asset(
+                // 'assets/images/globe.png',
+                'assets/images/earth.png',
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
 
+          /// GLOBE
+          // AnimatedBuilder(
+          //   animation: _globeController,
+          //   builder: (_, _) {
+          //     return CustomPaint(
+          //       size: const Size(280, 280),
+          //       painter: EarthGlobePainter(
+          //         t: _globeController.value,
+          //         isDark: isDark,
+          //       ),
+          //     );
+          //   },
+          // ),
           const SizedBox(height: 42),
 
           /// LANGUAGE PILLS
