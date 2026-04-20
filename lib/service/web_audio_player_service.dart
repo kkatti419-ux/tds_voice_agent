@@ -9,6 +9,9 @@ import 'package:universal_html/html.dart' as html;
 /// Console / DevTools filter: `VoiceAudio`
 const String _kLogName = 'VoiceAudio';
 
+/// Web [HTMLMediaElement.playbackRate] for TTS / URL playback (1.0 = normal).
+const double _kWebPlaybackRate = 1.3;
+
 void _voiceAudioLog(String message) {
   debugPrint('[$_kLogName] $message');
   developer.log(message, name: _kLogName);
@@ -202,6 +205,7 @@ class AudioPlayerService {
     }
 
     audio.loop = false;
+    audio.playbackRate = _kWebPlaybackRate;
 
     audio.onEnded.first.then((_) {
       _voiceAudioLog('url play: onEnded');
@@ -313,6 +317,7 @@ class AudioPlayerService {
     final audio = html.AudioElement(url);
     _webAudio = audio;
     audio.loop = false;
+    audio.playbackRate = _kWebPlaybackRate;
 
     void completeSafe() {
       if (!done.isCompleted) done.complete();

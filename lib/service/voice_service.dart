@@ -138,7 +138,7 @@ import 'package:universal_html/html.dart' as html;
 class VoiceService {
   static const String _wsUrl = String.fromEnvironment(
     'VOICE_WS_URL',
-    defaultValue: 'ws://zn92ktgasdnean-9002.proxy.runpod.net/new/ws',
+    defaultValue: 'ws://192.168.0.20:9876/new/ws',
   );
 
   void _log(String message) {

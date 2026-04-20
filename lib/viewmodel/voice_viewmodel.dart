@@ -73,6 +73,9 @@ class VoiceViewModel extends ChangeNotifier {
   /// Web: waiting for `ai_done` + playback for the current utterance turn.
   bool _awaitingWebTurn = false;
 
+  /// Server may stream [ai_stream] / TTS before local silence commit; accept binary while this is true.
+  bool _expectingAssistantBinary = false;
+
   /// Accumulates binary TTS for one web turn — many servers send MPEG chunks that are not valid alone in [AudioElement].
   BytesBuilder? _ttsBuffer;
 
@@ -248,6 +251,7 @@ class VoiceViewModel extends ChangeNotifier {
   void _cancelWebTurnForInterrupt(String reason) {
     if (!kIsWeb) return;
     debugPrint('[VoiceAudio] cancel web turn: $reason');
+    _expectingAssistantBinary = false;
     _ttsBuffer = null;
     _ttsGraceUntil = null;
     unawaited(_playerService.stop());
@@ -466,9 +470,11 @@ class VoiceViewModel extends ChangeNotifier {
     }
 
     _cancelIdleNoSpeechTimer();
-    _ttsBuffer = BytesBuilder();
+    // Keep audio buffered before commit (server often sends TTS before 3s silence fires).
+    _ttsBuffer ??= BytesBuilder();
 
     _awaitingWebTurn = true;
+    _expectingAssistantBinary = false;
     isProcessing = true;
     isAgentSpeaking = false;
 
@@ -535,6 +541,7 @@ class VoiceViewModel extends ChangeNotifier {
       isAgentSpeaking = false;
       isProcessing = false;
       _awaitingWebTurn = false;
+      _expectingAssistantBinary = false;
       _ttsGraceUntil = null;
       _ttsBuffer = null;
       _isSending = false;
@@ -628,6 +635,9 @@ class VoiceViewModel extends ChangeNotifier {
           messages[_userMsgIndex!].text = text;
           _notifyTextDebounced();
         }
+        if (kIsWeb && isListening && text.isNotEmpty && !_awaitingWebTurn) {
+          _expectingAssistantBinary = true;
+        }
         if (kIsWeb && text.isNotEmpty) {
           _scheduleIdleNoSpeechTimer();
         }
@@ -639,6 +649,13 @@ class VoiceViewModel extends ChangeNotifier {
         break;
       case 'status':
         _serverStatus = (data['text'] ?? '').toString();
+        final statusLower = _serverStatus?.toLowerCase() ?? '';
+        if (kIsWeb &&
+            isListening &&
+            !_awaitingWebTurn &&
+            statusLower == 'speaking') {
+          _expectingAssistantBinary = true;
+        }
         notifyListeners();
         break;
       case 'ai_stream':
@@ -652,7 +669,9 @@ class VoiceViewModel extends ChangeNotifier {
           messages[_agentMsgIndex!].text += delta;
           _notifyTextDebounced();
         }
-
+        if (kIsWeb && isListening && !_awaitingWebTurn) {
+          _expectingAssistantBinary = true;
+        }
         isProcessing = true;
         break;
       // case 'ai_stream':
@@ -769,14 +788,16 @@ class VoiceViewModel extends ChangeNotifier {
   //   if (chunk.isEmpty) return;
   //   final inGrace =
   //       _ttsGraceUntil != null && DateTime.now().isBefore(_ttsGraceUntil!);
-  //   if (kIsWeb && !_awaitingWebTurn && !inGrace) {
+  //   final acceptTts =
+        _awaitingWebTurn || inGrace || _expectingAssistantBinary;
+    if (kIsWeb && !acceptTts) {
   //     final now = DateTime.now();
   //     if (_lastVoiceAudioDropLogAt == null ||
   //         now.difference(_lastVoiceAudioDropLogAt!) >=
   //             const Duration(milliseconds: 800)) {
   //       _lastVoiceAudioDropLogAt = now;
   //       debugPrint(
-  //         '[VoiceAudio] dropped binary ${chunk.length}B: no active turn and grace expired',
+  //         '[VoiceAudio] dropped binary ${chunk.length}B: not accepting TTS (no turn, grace, or pre-commit expectation)',
   //       );
   //     }
   //     _vmLog(
