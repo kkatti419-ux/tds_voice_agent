@@ -571,7 +571,7 @@ class VoiceViewModel extends ChangeNotifier {
 
     debugPrint(
       '[VoiceDebug] ▶️ PLAY audioBytes=${bytes.length} '
-      'chunks=$_audioChunkCount dropped=$_droppedChunks',
+      'chunks=$_audioChunkCount total=$_totalAudioBytes dropped=$_droppedChunks',
     );
 
     isAgentSpeaking = true;
@@ -720,36 +720,31 @@ class VoiceViewModel extends ChangeNotifier {
     _webTurnCompleter = null;
   }
 
-  final List<Uint8List> _audioQueue = [];
-  bool _isPlayingQueue = false;
-
   void _onWebAudio(Uint8List chunk) {
     if (chunk.isEmpty) return;
+    _audioChunkCount++;
+    _totalAudioBytes += chunk.length;
+
+    final now = DateTime.now();
+    final inGrace = _ttsGraceUntil != null && now.isBefore(_ttsGraceUntil!);
+    final acceptTts = _awaitingWebTurn || inGrace || _expectingAssistantBinary;
+    if (kIsWeb && !acceptTts) {
+      _droppedChunks++;
+      if (_lastVoiceAudioDropLogAt == null ||
+          now.difference(_lastVoiceAudioDropLogAt!) >=
+              const Duration(milliseconds: 800)) {
+        _lastVoiceAudioDropLogAt = now;
+        debugPrint(
+          '[VoiceAudio] dropped binary ${chunk.length}B: not accepting TTS',
+        );
+      }
+      return;
+    }
 
     if (agentTtsMuted) return;
 
-    _audioQueue.add(chunk);
-    _processAudioQueue();
-  }
-
-  Future<void> _processAudioQueue() async {
-    if (_isPlayingQueue) return;
-    if (_audioQueue.isEmpty) return;
-
-    _isPlayingQueue = true;
-
-    try {
-      while (_audioQueue.isNotEmpty) {
-        final chunk = _audioQueue.removeAt(0);
-
-        await _playerService.playBytes(chunk);
-
-        // IMPORTANT: ensure one finishes before next starts
-        await _playerService.waitUntilPlaybackIdle();
-      }
-    } finally {
-      _isPlayingQueue = false;
-    }
+    _ttsBuffer ??= BytesBuilder();
+    _ttsBuffer!.add(chunk);
   }
   // void _onWebAudio(Uint8List chunk) {
   //   if (chunk.isEmpty) return;
@@ -789,8 +784,8 @@ class VoiceViewModel extends ChangeNotifier {
   //   final inGrace =
   //       _ttsGraceUntil != null && DateTime.now().isBefore(_ttsGraceUntil!);
   //   final acceptTts =
-        _awaitingWebTurn || inGrace || _expectingAssistantBinary;
-    if (kIsWeb && !acceptTts) {
+  //       _awaitingWebTurn || inGrace || _expectingAssistantBinary;
+  //   if (kIsWeb && !acceptTts) {
   //     final now = DateTime.now();
   //     if (_lastVoiceAudioDropLogAt == null ||
   //         now.difference(_lastVoiceAudioDropLogAt!) >=
