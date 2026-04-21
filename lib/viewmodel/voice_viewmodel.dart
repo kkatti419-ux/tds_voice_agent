@@ -65,12 +65,6 @@ class VoiceViewModel extends ChangeNotifier {
   /// Web: waiting for `ai_done` + playback for the current utterance turn.
   bool _awaitingWebTurn = false;
 
-<<<<<<< Updated upstream
-=======
-  /// Legacy fallback: accept binary before [_awaitingWebTurn] is set (same microtask as first JSON).
-  bool _expectingAssistantBinary = false;
-
->>>>>>> Stashed changes
   /// Accumulates binary TTS for one web turn — many servers send MPEG chunks that are not valid alone in [AudioElement].
   BytesBuilder? _ttsBuffer;
 
@@ -105,7 +99,6 @@ class VoiceViewModel extends ChangeNotifier {
 
   /// Throttle logs when binary TTS arrives outside an active turn.
   DateTime? _lastVoiceAudioDropLogAt;
-  bool _interruptPlayback = false;
 
   VoiceViewModel() {
     _initConnectivity();
@@ -359,10 +352,7 @@ class VoiceViewModel extends ChangeNotifier {
 
     debugPrint('[VoiceAudio] cancel web turn: $reason');
 
-    _interruptPlayback = true; // ✅ ADD THIS
-
     _audioBufferClear();
-    _audioQueue.clear(); // ✅ IMPORTANT
 
     unawaited(_playerService.stop());
     _completeWebTurnIfPending();
@@ -567,24 +557,6 @@ class VoiceViewModel extends ChangeNotifier {
   /// Idempotent: safe to call on every matching JSON frame while already in a turn.
   void _beginWebAssistantTurn() {
     if (!kIsWeb) return;
-<<<<<<< Updated upstream
-
-    _interruptPlayback = false;
-    _audioQueue.clear();
-
-    _ttsBuffer = BytesBuilder(); // ✅ ADD
-    _ttsGraceUntil = null; // ✅ ADD
-
-    await _playerService.stop(); // ✅ ADD (important)
-
-    // ✅ RESET DEBUG
-    _audioChunkCount = 0;
-    _totalAudioBytes = 0;
-    _droppedChunks = 0;
-    _textEventCount = 0;
-
-=======
->>>>>>> Stashed changes
     if (!isListening) return;
     if (_sessionPhase != VoiceSessionPhase.listening) return;
     if (_awaitingWebTurn) {
@@ -595,13 +567,9 @@ class VoiceViewModel extends ChangeNotifier {
     _vmLog('begin assistant turn (backend signal)', verbose: true);
 
     _cancelIdleNoSpeechTimer();
-<<<<<<< Updated upstream
-    _ttsBuffer = BytesBuilder();
-=======
     _cancelPresencePromptTimer();
     _presenceCheckSent = false;
-    _ttsBuffer ??= BytesBuilder();
->>>>>>> Stashed changes
+    _ttsBuffer = BytesBuilder();
 
     _awaitingWebTurn = true;
     isProcessing = true;
@@ -725,13 +693,6 @@ class VoiceViewModel extends ChangeNotifier {
         break;
       case 'status':
         _serverStatus = (data['text'] ?? '').toString();
-<<<<<<< Updated upstream
-=======
-        final statusLower = _serverStatus?.toLowerCase() ?? '';
-        if (kIsWeb && isListening && statusLower == 'speaking') {
-          _beginWebAssistantTurn();
-        }
->>>>>>> Stashed changes
         notifyListeners();
         break;
       case 'ai_stream':
@@ -743,10 +704,6 @@ class VoiceViewModel extends ChangeNotifier {
           messages[_agentMsgIndex!].text += delta;
           _notifyTextDebounced();
         }
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
         isProcessing = true;
         _cancelPresencePromptTimer();
         break;
@@ -799,124 +756,9 @@ class VoiceViewModel extends ChangeNotifier {
 
   void _onWebAudio(Uint8List chunk) {
     if (chunk.isEmpty) return;
-<<<<<<< Updated upstream
-
-    if (agentTtsMuted) return;
-
-    _audioQueue.add(chunk);
-    _processAudioQueue();
-  }
-
-  Future<void> _processAudioQueue() async {
-    if (_isPlayingQueue) return;
-    if (_audioQueue.isEmpty) return;
-
-    _isPlayingQueue = true;
-
-    try {
-      while (_audioQueue.isNotEmpty) {
-        if (_interruptPlayback) {
-          _audioQueue.clear();
-          break;
-        }
-
-        final chunk = _audioQueue.removeAt(0);
-
-        await _playerService.playBytes(chunk);
-
-        if (_interruptPlayback) break;
-
-        await _playerService.waitUntilPlaybackIdle();
-      }
-    } finally {
-      _isPlayingQueue = false;
-    }
-  }
-
-  // Future<void> _processAudioQueue() async {
-  //   if (_isPlayingQueue) return;
-  //   if (_audioQueue.isEmpty) return;
-
-  //   _isPlayingQueue = true;
-
-  //   try {
-  //     while (_audioQueue.isNotEmpty) {
-  //       final chunk = _audioQueue.removeAt(0);
-
-  //       await _playerService.playBytes(chunk);
-
-  //       // IMPORTANT: ensure one finishes before next starts
-  //       await _playerService.waitUntilPlaybackIdle();
-  //     }
-  //   } finally {
-  //     _isPlayingQueue = false;
-  //   }
-  // }
-  // void _onWebAudio(Uint8List chunk) {
-  //   if (chunk.isEmpty) return;
-
-  //   _audioChunkCount++;
-  //   _totalAudioBytes += chunk.length;
-
-  //   final now = DateTime.now();
-  //   final inGrace = _ttsGraceUntil != null && now.isBefore(_ttsGraceUntil!);
-
-  //   debugPrint(
-  //     '[VoiceDebug] AUDIO chunk #$_audioChunkCount '
-  //     'size=${chunk.length} totalBytes=$_totalAudioBytes '
-  //     'awaiting=$_awaitingWebTurn grace=$inGrace',
-  //   );
-
-  //   // 🚨 FIX: DO NOT DROP AUDIO
-  //   if (kIsWeb && !_awaitingWebTurn && !inGrace) {
-  //     _droppedChunks++;
-
-  //     debugPrint(
-  //       '[VoiceDebug] ⚠️ Late chunk (NOT DROPPED) '
-  //       'size=${chunk.length} dropped=$_droppedChunks',
-  //     );
-  //   }
-
-  //   if (agentTtsMuted) {
-  //     debugPrint('[VoiceDebug] 🔇 TTS muted');
-  //     return;
-  //   }
-
-  //   _ttsBuffer ??= BytesBuilder();
-  //   _ttsBuffer!.add(chunk);
-  // }
-  // void _onWebAudio(Uint8List chunk) {
-  //   if (chunk.isEmpty) return;
-  //   final inGrace =
-  //       _ttsGraceUntil != null && DateTime.now().isBefore(_ttsGraceUntil!);
-  //   if (kIsWeb && !_awaitingWebTurn && !inGrace) {
-  //     final now = DateTime.now();
-  //     if (_lastVoiceAudioDropLogAt == null ||
-  //         now.difference(_lastVoiceAudioDropLogAt!) >=
-  //             const Duration(milliseconds: 800)) {
-  //       _lastVoiceAudioDropLogAt = now;
-  //       debugPrint(
-  //         '[VoiceAudio] dropped binary ${chunk.length}B: no active turn and grace expired',
-  //       );
-  //     }
-  //     _vmLog(
-  //       'TTS chunk ignored (no active turn) ${chunk.length}B',
-  //       verbose: true,
-  //     );
-  //     return;
-  //   }
-  //   if (agentTtsMuted) {
-  //     _vmLog('TTS skipped (agent audio muted)', verbose: true);
-  //     return;
-  //   }
-  //   _vmLog('TTS +${chunk.length}B (buffered)', verbose: true);
-  //   _ttsBuffer ??= BytesBuilder();
-  //   _ttsBuffer!.add(chunk);
-  // }
-=======
     final inGrace =
         _ttsGraceUntil != null && DateTime.now().isBefore(_ttsGraceUntil!);
-    final acceptTts = _awaitingWebTurn || inGrace || _expectingAssistantBinary;
+    final acceptTts = _awaitingWebTurn || inGrace;
     if (kIsWeb && !acceptTts) {
       final now = DateTime.now();
       if (_lastVoiceAudioDropLogAt == null ||
@@ -924,7 +766,7 @@ class VoiceViewModel extends ChangeNotifier {
               const Duration(milliseconds: 800)) {
         _lastVoiceAudioDropLogAt = now;
         debugPrint(
-          '[VoiceAudio] dropped binary ${chunk.length}B: not accepting TTS (no turn, grace, or pre-commit expectation)',
+          '[VoiceAudio] dropped binary ${chunk.length}B: no active turn and grace expired',
         );
       }
       _vmLog(
@@ -941,7 +783,6 @@ class VoiceViewModel extends ChangeNotifier {
     _ttsBuffer ??= BytesBuilder();
     _ttsBuffer!.add(chunk);
   }
->>>>>>> Stashed changes
 
   /// Native: stop recording and upload. Web: use [muteMic].
   Future<void> stopListeningNative() async {
