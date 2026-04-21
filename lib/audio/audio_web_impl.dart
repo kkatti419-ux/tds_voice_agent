@@ -27,7 +27,10 @@ class AudioWeb {
     }
   }
 
-  void start({void Function(double levelDb)? onLevel}) {
+  void start({
+    void Function(double levelDb)? onLevel,
+    void Function(String message)? onMicError,
+  }) {
     _chunkIndex = 0;
     _totalPcmBytes = 0;
     _decodeErrors = 0;
@@ -42,6 +45,7 @@ class AudioWeb {
         if (decoded is! List) {
           _decodeErrors++;
           _log('decode: expected JSON array, got ${decoded.runtimeType}');
+          onMicError?.call('invalid_pcm_payload');
           return;
         }
         final bytes = Uint8List.fromList(
@@ -59,6 +63,7 @@ class AudioWeb {
       } catch (e, st) {
         _decodeErrors++;
         _log('PCM JSON decode error: $e $st');
+        onMicError?.call('pcm_decode_error');
       }
     }).toJS;
 

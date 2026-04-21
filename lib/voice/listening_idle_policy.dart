@@ -25,4 +25,7 @@ class ListeningIdlePolicy {
 
   /// After [VoiceSessionPhase.awaitingContinueAnswer], auto [muteMic] if no answer.
   static const Duration continuePromptTimeout = Duration(seconds: 10);
+
+  /// If user stays idle while listening, ask a lightweight presence check-in.
+  static const Duration userPresencePromptIdle = Duration(seconds: 30);
 }

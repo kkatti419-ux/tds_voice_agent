@@ -6,6 +6,12 @@ abstract final class VoiceSessionProtocol {
   /// C→S: prolonged no speech while listening; not an utterance commit.
   static const String clientIdle = 'client_idle';
 
+  /// C→S: lightweight ping asking if user is still present.
+  static const String clientPresenceCheck = 'client_presence_check';
+
+  /// Default text payload for [clientPresenceCheck].
+  static const String clientPresenceCheckDefaultText = 'Are you still there?';
+
   /// S→C: policy after idle or after [continueIntent].
   /// Supported shapes:
   /// - `{ "type": "session_policy", "continueSession": true|false }`

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:typed_data';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tds_voice_agent/service/audio_palyer_service.dart'
     show AudioPlayerService;
@@ -16,13 +17,6 @@ import '../voice/listening_idle_policy.dart';
 import '../voice/voice_session_protocol.dart';
 
 class VoiceViewModel extends ChangeNotifier {
-  // 🔥 ADD THESE DEBUG VARIABLES INSIDE CLASS (top)
-
-  int _audioChunkCount = 0;
-  int _totalAudioBytes = 0;
-  int _droppedChunks = 0;
-  int _textEventCount = 0;
-
   void _vmLog(String message, {bool verbose = false}) {
     if (!kDebugMode) return;
     if (verbose && !_verboseLogs) return;
@@ -30,14 +24,12 @@ class VoiceViewModel extends ChangeNotifier {
     developer.log(message, name: 'VoiceVM');
   }
 
-  /// When false, only important logs (barge-in, mute, errors, session).
-  static const bool _verboseLogs = false;
+  /// Keep verbose logs enabled to inspect all backend response/chunk traffic.
+  static const bool _verboseLogs = true;
 
   String _previewJson(Map<String, dynamic> data) {
     try {
-      final s = jsonEncode(data);
-      if (s.length <= 600) return s;
-      return '${s.substring(0, 600)}…(${s.length} chars)';
+      return jsonEncode(data);
     } catch (_) {
       return data.toString();
     }
@@ -73,6 +65,12 @@ class VoiceViewModel extends ChangeNotifier {
   /// Web: waiting for `ai_done` + playback for the current utterance turn.
   bool _awaitingWebTurn = false;
 
+<<<<<<< Updated upstream
+=======
+  /// Legacy fallback: accept binary before [_awaitingWebTurn] is set (same microtask as first JSON).
+  bool _expectingAssistantBinary = false;
+
+>>>>>>> Stashed changes
   /// Accumulates binary TTS for one web turn — many servers send MPEG chunks that are not valid alone in [AudioElement].
   BytesBuilder? _ttsBuffer;
 
@@ -83,17 +81,22 @@ class VoiceViewModel extends ChangeNotifier {
   VoiceSessionPhase _sessionPhase = VoiceSessionPhase.listening;
   Timer? _idleNoSpeechTimer;
   Timer? _continuePromptTimer;
+  Timer? _presencePromptTimer;
 
-  static const Duration _silenceDuration = Duration(seconds: 3);
+  /// After sending [VoiceSessionProtocol.clientPresenceCheck]; cleared when user speaks or assistant streams.
+  bool _presenceCheckSent = false;
+
+  bool _isOffline = false;
+  String? _micBlockedMessage;
+
+  final Connectivity _connectivity = Connectivity();
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
   /// Brief wait after [ai_done] so trailing TTS frames are merged before decode/play.
   static const Duration _ttsPostDoneDrain = Duration(milliseconds: 220);
-  // static const double _speechThresholdDb = -35.0;
-  static const double _speechThresholdDb = -45.0;
+  static const double _speechThresholdDb = -35.0;
   static const Duration _bargeInHold = Duration(milliseconds: 280);
 
-  DateTime _lastSpeechAt = DateTime.fromMillisecondsSinceEpoch(0);
-  bool _autoSendTriggered = false;
   bool _isStopping = false;
   bool _isSending = false;
   DateTime? _bargeInSpeechStart;
@@ -105,6 +108,7 @@ class VoiceViewModel extends ChangeNotifier {
   bool _interruptPlayback = false;
 
   VoiceViewModel() {
+    _initConnectivity();
     if (kIsWeb) {
       _vmLog('init: WebSocket + streams');
       _socket.connect();
@@ -113,12 +117,109 @@ class VoiceViewModel extends ChangeNotifier {
     }
   }
 
+  void _initConnectivity() {
+    _connectivitySub = _connectivity.onConnectivityChanged.listen(
+      _onConnectivityChanged,
+    );
+    unawaited(_refreshConnectivityOnce());
+  }
+
+  Future<void> _refreshConnectivityOnce() async {
+    try {
+      final r = await _connectivity.checkConnectivity();
+      _applyConnectivity(r);
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  void _onConnectivityChanged(List<ConnectivityResult> results) {
+    _applyConnectivity(results);
+    notifyListeners();
+  }
+
+  void _applyConnectivity(List<ConnectivityResult> results) {
+    _isOffline =
+        results.isEmpty || results.every((e) => e == ConnectivityResult.none);
+  }
+
+  /// True when no usable network interface (informational only).
+  bool get isOffline => _isOffline;
+
+  /// Shown when [getUserMedia] fails in the browser (see [web/audio_processor.js]).
+  String? get micBlockedMessage => _micBlockedMessage;
+
+  /// True briefly after idle check-in was sent to the server (see [dismissPresenceCheckIn]).
+  bool get presenceCheckSent => _presenceCheckSent;
+
+  void clearMicBlockedMessage() {
+    if (_micBlockedMessage == null) return;
+    _micBlockedMessage = null;
+    notifyListeners();
+  }
+
+  void dismissPresenceCheckIn() {
+    if (!_presenceCheckSent) return;
+    _presenceCheckSent = false;
+    notifyListeners();
+  }
+
+  void _cancelPresencePromptTimer() {
+    _presencePromptTimer?.cancel();
+    _presencePromptTimer = null;
+  }
+
+  void _schedulePresencePromptTimer() {
+    _cancelPresencePromptTimer();
+    if (!kIsWeb || !isListening) return;
+    if (_sessionPhase != VoiceSessionPhase.listening) return;
+    if (_awaitingWebTurn || isAgentSpeaking || isProcessing) return;
+
+    _presencePromptTimer = Timer(
+      ListeningIdlePolicy.userPresencePromptIdle,
+      _onPresencePromptFired,
+    );
+  }
+
+  void _onPresencePromptFired() {
+    _presencePromptTimer = null;
+    if (!kIsWeb || !isListening) return;
+    if (_sessionPhase != VoiceSessionPhase.listening) return;
+    if (_awaitingWebTurn || isAgentSpeaking || isProcessing) return;
+
+    _socket.send({
+      'type': VoiceSessionProtocol.clientPresenceCheck,
+      'text': VoiceSessionProtocol.clientPresenceCheckDefaultText,
+      'ts': DateTime.now().millisecondsSinceEpoch,
+    });
+    _vmLog('*******************************************');
+    _vmLog('sent ${VoiceSessionProtocol.clientPresenceCheck}', verbose: true);
+    _vmLog('*******************************************');
+    _presenceCheckSent = true;
+    notifyListeners();
+    _schedulePresencePromptTimer();
+  }
+
+  void _onUserSpeechResetsPresencePrompt() {
+    if (_presenceCheckSent) {
+      _presenceCheckSent = false;
+    }
+    _schedulePresencePromptTimer();
+  }
+
+  void _onMicCaptureError(String message) {
+    if (!kIsWeb) return;
+    _micBlockedMessage =
+        'Microphone access blocked (${message.trim()}). To allow: use the lock or site settings icon in the address bar → Microphone → Allow. Safari (iOS): Settings → Safari → Microphone, or the “AA” menu → Website Settings.';
+    notifyListeners();
+  }
+
   /// Mic is muted by user (tap). Unmute with [startListening].
   bool get micMutedByUser => _userMutedMic;
 
   @override
   void dispose() {
     _cancelIdleTimers();
+    _connectivitySub?.cancel();
     _jsonSub?.cancel();
     _audioSub?.cancel();
     super.dispose();
@@ -152,7 +253,7 @@ class VoiceViewModel extends ChangeNotifier {
       final idleHint = kIsWeb
           ? ' · idle ${ListeningIdlePolicy.idleNoSpeech.inSeconds}s → ping server'
           : '';
-      return 'Listening… (silence ${_silenceDuration.inSeconds}s sends turn)$idleHint';
+      return 'Listening… (turn ends when the assistant finishes)$idleHint';
     }
     if (isProcessing) return 'Agent is responding…';
     if (isAgentSpeaking) return 'Agent speaking… (speak to interrupt)';
@@ -204,23 +305,22 @@ class VoiceViewModel extends ChangeNotifier {
 
     if (kIsWeb) {
       _vmLog('startListening(web): mic streaming', verbose: true);
-      _autoSendTriggered = false;
-      _lastSpeechAt = DateTime.now();
+      _presenceCheckSent = false;
       _bargeInSpeechStart = null;
       amplitudeDb = -120;
       _sessionPhase = VoiceSessionPhase.listening;
+      _micBlockedMessage = null;
 
       isListening = true;
       notifyListeners();
 
-      _audioWeb.start(onLevel: _onAmplitude);
+      _audioWeb.start(onLevel: _onAmplitude, onMicError: _onMicCaptureError);
       _scheduleIdleNoSpeechTimer();
+      _schedulePresencePromptTimer();
       unawaited(AudioPlayerService.resumeAudioContextIfNeeded());
       return;
     }
 
-    _autoSendTriggered = false;
-    _lastSpeechAt = DateTime.now();
     amplitudeDb = -120;
 
     isListening = true;
@@ -278,6 +378,8 @@ class VoiceViewModel extends ChangeNotifier {
     _idleNoSpeechTimer = null;
     _continuePromptTimer?.cancel();
     _continuePromptTimer = null;
+    _cancelPresencePromptTimer();
+    _presenceCheckSent = false;
   }
 
   void _cancelIdleNoSpeechTimer() {
@@ -305,6 +407,9 @@ class VoiceViewModel extends ChangeNotifier {
     _idleNoSpeechTimer = null;
     if (!kIsWeb || !isListening || _awaitingWebTurn) return;
     if (_sessionPhase != VoiceSessionPhase.listening) return;
+
+    _cancelPresencePromptTimer();
+    _presenceCheckSent = false;
 
     _socket.send({
       'type': VoiceSessionProtocol.clientIdle,
@@ -342,6 +447,7 @@ class VoiceViewModel extends ChangeNotifier {
       _serverStatus = null;
       if (isListening) {
         _scheduleIdleNoSpeechTimer();
+        _schedulePresencePromptTimer();
       }
       notifyListeners();
     } else {
@@ -364,12 +470,15 @@ class VoiceViewModel extends ChangeNotifier {
       _serverStatus = prompt.isNotEmpty ? prompt : null;
       if (isListening) {
         _scheduleIdleNoSpeechTimer();
+        _schedulePresencePromptTimer();
       }
       notifyListeners();
       return;
     }
 
     if (action == 'ask_user') {
+      _cancelPresencePromptTimer();
+      _presenceCheckSent = false;
       _sessionPhase = VoiceSessionPhase.awaitingContinueAnswer;
       _serverStatus = prompt.isNotEmpty ? prompt : 'Continue? Tap Yes or No';
       _startContinuePromptTimer();
@@ -385,6 +494,7 @@ class VoiceViewModel extends ChangeNotifier {
     _sessionPhase = VoiceSessionPhase.listening;
     if (isListening) {
       _scheduleIdleNoSpeechTimer();
+      _schedulePresencePromptTimer();
     }
     notifyListeners();
   }
@@ -405,7 +515,6 @@ class VoiceViewModel extends ChangeNotifier {
     }
 
     if (db >= _speechThresholdDb) {
-      _lastSpeechAt = now;
       if (kIsWeb) {
         if (_sessionPhase == VoiceSessionPhase.awaitingPolicy) {
           _sessionPhase = VoiceSessionPhase.listening;
@@ -413,6 +522,7 @@ class VoiceViewModel extends ChangeNotifier {
           notifyListeners();
         }
         _scheduleIdleNoSpeechTimer();
+        _onUserSpeechResetsPresencePrompt();
       }
       return;
     }
@@ -424,19 +534,6 @@ class VoiceViewModel extends ChangeNotifier {
     if (kIsWeb && _sessionPhase != VoiceSessionPhase.listening) {
       return;
     }
-
-    if (!_autoSendTriggered &&
-        now.difference(_lastSpeechAt) >= _silenceDuration) {
-      _autoSendTriggered = true;
-      _vmLog(
-        'silence ${_silenceDuration.inSeconds}s → commit utterance (mic stays on)',
-      );
-      Future.microtask(() {
-        if (kIsWeb) {
-          unawaited(_commitWebUtteranceFromSilence());
-        }
-      });
-    }
   }
 
   void _maybeBargeIn(DateTime now, double db) {
@@ -444,10 +541,8 @@ class VoiceViewModel extends ChangeNotifier {
       _bargeInSpeechStart = null;
       return;
     }
-    // Mic-driven interrupt only while assistant TTS is actually playing. Waiting
-    // for the server (_awaitingWebTurn / isProcessing) plus ambient noise used to
-    // fire barge-in and clear [_ttsBuffer], producing text but no audio.
-    if (!isAgentSpeaking) {
+    // Interrupt while assistant is streaming text/TTS or playing audio (not when idle).
+    if (!isAgentSpeaking && !isProcessing) {
       _bargeInSpeechStart = null;
       return;
     }
@@ -463,10 +558,16 @@ class VoiceViewModel extends ChangeNotifier {
     _cancelWebTurnForInterrupt('barge_in');
     isAgentSpeaking = false;
     notifyListeners();
+    if (kIsWeb) {
+      _schedulePresencePromptTimer();
+    }
   }
 
-  Future<void> _commitWebUtteranceFromSilence() async {
+  /// Opens a web assistant turn when the backend signals a response (transcript, [status] speaking, or [ai_stream]).
+  /// Idempotent: safe to call on every matching JSON frame while already in a turn.
+  void _beginWebAssistantTurn() {
     if (!kIsWeb) return;
+<<<<<<< Updated upstream
 
     _interruptPlayback = false;
     _audioQueue.clear();
@@ -482,18 +583,25 @@ class VoiceViewModel extends ChangeNotifier {
     _droppedChunks = 0;
     _textEventCount = 0;
 
+=======
+>>>>>>> Stashed changes
     if (!isListening) return;
-    if (_sessionPhase != VoiceSessionPhase.listening) {
-      _autoSendTriggered = false;
-      return;
-    }
+    if (_sessionPhase != VoiceSessionPhase.listening) return;
     if (_awaitingWebTurn) {
-      _autoSendTriggered = false;
       return;
     }
+    if (_isStopping) return;
+
+    _vmLog('begin assistant turn (backend signal)', verbose: true);
 
     _cancelIdleNoSpeechTimer();
+<<<<<<< Updated upstream
     _ttsBuffer = BytesBuilder();
+=======
+    _cancelPresencePromptTimer();
+    _presenceCheckSent = false;
+    _ttsBuffer ??= BytesBuilder();
+>>>>>>> Stashed changes
 
     _awaitingWebTurn = true;
     isProcessing = true;
@@ -507,39 +615,8 @@ class VoiceViewModel extends ChangeNotifier {
     _webTurnCompleter = Completer<void>();
     notifyListeners();
 
-    await _runWebTurnCompletion();
+    unawaited(_runWebTurnCompletion());
   }
-  // Future<void> _commitWebUtteranceFromSilence() async {
-  //   if (!kIsWeb) return;
-  //   if (!isListening) return;
-  //   if (_sessionPhase != VoiceSessionPhase.listening) {
-  //     _autoSendTriggered = false;
-  //     return;
-  //   }
-  //   if (_awaitingWebTurn) {
-  //     _vmLog('commit skipped: already awaiting turn');
-  //     _autoSendTriggered = false;
-  //     return;
-  //   }
-  //   if (_isStopping) return;
-
-  //   _cancelIdleNoSpeechTimer();
-  //   _ttsBuffer = BytesBuilder();
-
-  //   _awaitingWebTurn = true;
-  //   isProcessing = true;
-  //   isAgentSpeaking = false;
-
-  //   messages.add(VoiceMessage(text: '…', isUser: true));
-  //   messages.add(VoiceMessage(text: '', isUser: false));
-  //   _userMsgIndex = messages.length - 2;
-  //   _agentMsgIndex = messages.length - 1;
-
-  //   _webTurnCompleter = Completer<void>();
-  //   notifyListeners();
-
-  //   await _runWebTurnCompletion();
-  // }
 
   Future<void> _runWebTurnCompletion() async {
     final turn = _webTurnCompleter;
@@ -569,65 +646,44 @@ class VoiceViewModel extends ChangeNotifier {
       _agentMsgIndex = null;
       _webTurnCompleter = null;
       _serverStatus = null;
-      _autoSendTriggered = false;
-      _lastSpeechAt = DateTime.now();
       notifyListeners();
       if (kIsWeb && isListening && !_awaitingWebTurn) {
         _scheduleIdleNoSpeechTimer();
+        _schedulePresencePromptTimer();
       }
     }
   }
 
   Future<void> _playAccumulatedTtsIfAny() async {
-    if (agentTtsMuted) return;
-
-    final buf = _ttsBuffer;
-    if (buf == null || buf.length == 0) {
-      debugPrint('[VoiceDebug] ❌ No audio to play');
+    if (agentTtsMuted) {
+      debugPrint(
+        '[VoiceAudio] skip play: agentTtsMuted=true (toggle agent speaker to hear TTS)',
+      );
       return;
     }
-
+    final buf = _ttsBuffer;
+    if (buf == null || buf.length == 0) {
+      debugPrint(
+        '[VoiceAudio] skip play: buffer empty (server sent no binary TTS this turn, or chunks dropped — check logs above)',
+      );
+      return;
+    }
     final bytes = buf.toBytes();
-
-    debugPrint(
-      '[VoiceDebug] ▶️ PLAY audioBytes=${bytes.length} '
-      'chunks=$_audioChunkCount dropped=$_droppedChunks',
-    );
-
+    if (bytes.isEmpty) {
+      debugPrint('[VoiceAudio] skip play: toBytes() empty');
+      return;
+    }
+    debugPrint('[VoiceAudio] play accumulated TTS: bytes=${bytes.length}');
+    _cancelPresencePromptTimer();
     isAgentSpeaking = true;
     notifyListeners();
-
-    await _playerService.playBytes(bytes);
+    try {
+      await _playerService.playBytes(bytes);
+    } catch (e) {
+      debugPrint('[VoiceAudio] playBytes failed: $e');
+      _vmLog('play accumulated TTS failed: $e');
+    }
   }
-  // Future<void> _playAccumulatedTtsIfAny() async {
-  //   if (agentTtsMuted) {
-  //     debugPrint(
-  //       '[VoiceAudio] skip play: agentTtsMuted=true (toggle agent speaker to hear TTS)',
-  //     );
-  //     return;
-  //   }
-  //   final buf = _ttsBuffer;
-  //   if (buf == null || buf.length == 0) {
-  //     debugPrint(
-  //       '[VoiceAudio] skip play: buffer empty (server sent no binary TTS this turn, or chunks dropped — check logs above)',
-  //     );
-  //     return;
-  //   }
-  //   final bytes = buf.toBytes();
-  //   if (bytes.isEmpty) {
-  //     debugPrint('[VoiceAudio] skip play: toBytes() empty');
-  //     return;
-  //   }
-  //   debugPrint('[VoiceAudio] play accumulated TTS: bytes=${bytes.length}');
-  //   isAgentSpeaking = true;
-  //   notifyListeners();
-  //   try {
-  //     await _playerService.playBytes(bytes);
-  //   } catch (e) {
-  //     debugPrint('[VoiceAudio] playBytes failed: $e');
-  //     _vmLog('play accumulated TTS failed: $e');
-  //   }
-  // }
 
   void _notifyTextDebounced() {
     final now = DateTime.now();
@@ -651,6 +707,9 @@ class VoiceViewModel extends ChangeNotifier {
       case 'partial':
       case 'transcript':
         final text = (data['text'] ?? '').toString();
+        if (kIsWeb && isListening && text.isNotEmpty) {
+          _beginWebAssistantTurn();
+        }
         if (_userMsgIndex != null && text.isNotEmpty) {
           messages[_userMsgIndex!].text = text;
           _notifyTextDebounced();
@@ -666,36 +725,40 @@ class VoiceViewModel extends ChangeNotifier {
         break;
       case 'status':
         _serverStatus = (data['text'] ?? '').toString();
+<<<<<<< Updated upstream
+=======
+        final statusLower = _serverStatus?.toLowerCase() ?? '';
+        if (kIsWeb && isListening && statusLower == 'speaking') {
+          _beginWebAssistantTurn();
+        }
+>>>>>>> Stashed changes
         notifyListeners();
         break;
       case 'ai_stream':
+        if (kIsWeb && isListening) {
+          _beginWebAssistantTurn();
+        }
         final delta = (data['text'] ?? '').toString();
-
-        _textEventCount++;
-
-        debugPrint('[VoiceDebug] TEXT #$_textEventCount → "$delta"');
-
         if (_agentMsgIndex != null) {
           messages[_agentMsgIndex!].text += delta;
           _notifyTextDebounced();
         }
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
         isProcessing = true;
+        _cancelPresencePromptTimer();
         break;
-      // case 'ai_stream':
-      //   final delta = (data['text'] ?? '').toString();
-      //   if (_agentMsgIndex != null) {
-      //     messages[_agentMsgIndex!].text += delta;
-      //     _notifyTextDebounced();
-      //   }
-      //   isProcessing = true;
-      //   break;
       case 'ai_done':
         isProcessing = false;
         _serverStatus = null;
         _ttsGraceUntil = DateTime.now().add(_ttsGraceAfterDone);
         _completeWebTurnIfPending();
         notifyListeners();
+        if (kIsWeb) {
+          _schedulePresencePromptTimer();
+        }
         break;
       case 'error':
         final msg = (data['text'] ?? data['error'] ?? 'Error').toString();
@@ -707,12 +770,18 @@ class VoiceViewModel extends ChangeNotifier {
         _ttsGraceUntil = DateTime.now().add(_ttsGraceAfterDone);
         _completeWebTurnIfPending();
         notifyListeners();
+        if (kIsWeb) {
+          _schedulePresencePromptTimer();
+        }
         break;
       case 'interrupt':
         _vmLog('interrupt (server)');
         _cancelWebTurnForInterrupt('server_interrupt');
         isAgentSpeaking = false;
         notifyListeners();
+        if (kIsWeb) {
+          _schedulePresencePromptTimer();
+        }
         break;
       default:
         _vmLog('unhandled type=$type');
@@ -728,11 +797,9 @@ class VoiceViewModel extends ChangeNotifier {
     _webTurnCompleter = null;
   }
 
-  final List<Uint8List> _audioQueue = [];
-  bool _isPlayingQueue = false;
-
   void _onWebAudio(Uint8List chunk) {
     if (chunk.isEmpty) return;
+<<<<<<< Updated upstream
 
     if (agentTtsMuted) return;
 
@@ -846,8 +913,37 @@ class VoiceViewModel extends ChangeNotifier {
   //   _ttsBuffer ??= BytesBuilder();
   //   _ttsBuffer!.add(chunk);
   // }
+=======
+    final inGrace =
+        _ttsGraceUntil != null && DateTime.now().isBefore(_ttsGraceUntil!);
+    final acceptTts = _awaitingWebTurn || inGrace || _expectingAssistantBinary;
+    if (kIsWeb && !acceptTts) {
+      final now = DateTime.now();
+      if (_lastVoiceAudioDropLogAt == null ||
+          now.difference(_lastVoiceAudioDropLogAt!) >=
+              const Duration(milliseconds: 800)) {
+        _lastVoiceAudioDropLogAt = now;
+        debugPrint(
+          '[VoiceAudio] dropped binary ${chunk.length}B: not accepting TTS (no turn, grace, or pre-commit expectation)',
+        );
+      }
+      _vmLog(
+        'TTS chunk ignored (no active turn) ${chunk.length}B',
+        verbose: true,
+      );
+      return;
+    }
+    if (agentTtsMuted) {
+      _vmLog('TTS skipped (agent audio muted)', verbose: true);
+      return;
+    }
+    _vmLog('TTS +${chunk.length}B (buffered)', verbose: true);
+    _ttsBuffer ??= BytesBuilder();
+    _ttsBuffer!.add(chunk);
+  }
+>>>>>>> Stashed changes
 
-  /// Native: stop recording and upload. Web: use [muteMic] or silence commit.
+  /// Native: stop recording and upload. Web: use [muteMic].
   Future<void> stopListeningNative() async {
     if (!isListening) return;
     if (_isStopping) return;
