@@ -23,6 +23,9 @@ class ListeningIdlePolicy {
   /// No speech above threshold for this long → send [VoiceSessionProtocol.clientIdle].
   static const Duration idleNoSpeech = Duration(seconds: 10);
 
+  /// No user speech for this long (while listening) → send [VoiceSessionProtocol.clientPresenceCheck]; server responds with streaming/TTS.
+  static const Duration userPresencePromptIdle = Duration(seconds: 15);
+
   /// After [VoiceSessionPhase.awaitingContinueAnswer], auto [muteMic] if no answer.
   static const Duration continuePromptTimeout = Duration(seconds: 10);
 }

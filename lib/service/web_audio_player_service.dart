@@ -6,11 +6,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:universal_html/html.dart' as html;
 
+import 'web_audio_js_bridge_stub.dart'
+    if (dart.library.html) 'web_audio_js_bridge_web.dart' as js_bridge;
+
 /// Console / DevTools filter: `VoiceAudio`
 const String _kLogName = 'VoiceAudio';
 
 /// Web [HTMLMediaElement.playbackRate] for TTS / URL playback (1.0 = normal).
-const double _kWebPlaybackRate = 1.3;
+const double _kWebPlaybackRate = 1.2;
 
 void _voiceAudioLog(String message) {
   debugPrint('[$_kLogName] $message');
@@ -31,22 +34,46 @@ class AudioPlayerService {
 
   int _stopGeneration = 0;
 
-  /// Resume suspended Web Audio context (helps after tab focus / background).
-  static Future<void> resumeAudioContextIfNeeded() async {
+  /// Shared Web Audio context for TTS decode (matches proven HTML `decodeAudioData` flow).
+  static dynamic _sharedDecodeContext;
+
+  /// Current [AudioBufferSourceNode] — [stop] uses [stop](0) for instant interrupt like HTML.
+  static dynamic _activeBufferSource;
+
+  /// Creates / resumes the shared decode [AudioContext]. Call from mic start (user gesture).
+  static Future<void> ensurePlaybackAudioContext() async {
     if (!kIsWeb) return;
     try {
       final w = html.window as dynamic;
-      final ctor = w.AudioContext;
+      final ctor = w.AudioContext ?? w.webkitAudioContext;
       if (ctor == null) return;
-      final ctx = ctor() as dynamic;
+      _sharedDecodeContext ??= ctor() as dynamic;
+      final ctx = _sharedDecodeContext;
       final state = ctx.state?.toString() ?? '';
       if (state == 'suspended') {
-        await ctx.resume();
-        _voiceAudioLog('AudioContext resumed (was suspended)');
+        await js_bridge.resumeAudioContextPromise(ctx);
+        _voiceAudioLog('shared AudioContext resumed (was suspended)');
       }
     } catch (e) {
-      _voiceAudioLog('AudioContext resume skipped: $e');
+      _voiceAudioLog('ensurePlaybackAudioContext: $e');
     }
+  }
+
+  /// Resume suspended Web Audio context (helps after tab focus / background).
+  static Future<void> resumeAudioContextIfNeeded() async {
+    await ensurePlaybackAudioContext();
+  }
+
+  static void _stopActiveBufferSource() {
+    final src = _activeBufferSource;
+    _activeBufferSource = null;
+    if (src == null) return;
+    try {
+      src.stop(0);
+    } catch (_) {}
+    try {
+      src.disconnect();
+    } catch (_) {}
   }
 
   /// [HTMLMediaElement.play] can reject with NotAllowedError until a user gesture;
@@ -75,6 +102,7 @@ class AudioPlayerService {
       'stop #$_stopGeneration: abort in-flight + clear queue (pending=${_queue.length})',
     );
 
+    _stopActiveBufferSource();
     _completeActivePlayback(reason: 'stop()');
 
     final pending = _queue.toList(growable: false);
@@ -306,6 +334,60 @@ class AudioPlayerService {
         : _headerHex(bytes, bytes.length);
     _voiceAudioLog('playBytes: len=${bytes.length} mime=$mime header4=$head4');
 
+    if (await _tryPlayWebBytesDecode(bytes)) {
+      return;
+    }
+    await _playWebBytesBlob(bytes);
+  }
+
+  /// HTML reference: [AudioContext.decodeAudioData] + [AudioBufferSourceNode] queue.
+  Future<bool> _tryPlayWebBytesDecode(Uint8List bytes) async {
+    try {
+      await ensurePlaybackAudioContext();
+      final ctx = _sharedDecodeContext;
+      if (ctx == null) return false;
+
+      final copy = (bytes.offsetInBytes == 0 &&
+              bytes.lengthInBytes == bytes.buffer.lengthInBytes)
+          ? bytes
+          : Uint8List.fromList(bytes);
+
+      final audioBuf = await js_bridge.decodeAudioDataPromise(
+        ctx,
+        copy.buffer,
+      );
+      if (audioBuf == null) return false;
+
+      final done = Completer<void>();
+      _activePlaybackCompleter = done;
+
+      final src = ctx.createBufferSource() as dynamic;
+      src.buffer = audioBuf;
+      src.connect(ctx.destination);
+      _activeBufferSource = src;
+
+      js_bridge.setBufferSourceOnEnded(src, () {
+        if (identical(_activeBufferSource, src)) {
+          _activeBufferSource = null;
+        }
+        if (!done.isCompleted) done.complete();
+        if (identical(_activePlaybackCompleter, done)) {
+          _activePlaybackCompleter = null;
+        }
+      });
+
+      src.start(0);
+      _voiceAudioLog('WebAudio decode: playing len=${bytes.length}');
+      await done.future;
+      return true;
+    } catch (e) {
+      _voiceAudioLog('decodeAudioData / WebAudio: $e');
+      return false;
+    }
+  }
+
+  Future<void> _playWebBytesBlob(Uint8List bytes) async {
+    final mime = _guessAudioMime(bytes);
     final done = Completer<void>();
     _activePlaybackCompleter = done;
 
