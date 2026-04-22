@@ -6,6 +6,14 @@ abstract final class VoiceSessionProtocol {
   /// C→S: prolonged no speech while listening; not an utterance commit.
   static const String clientIdle = 'client_idle';
 
+  /// C→S: user idle (see [ListeningIdlePolicy.userPresencePromptIdle]); server should reply with normal streaming + optional TTS.
+  /// Payload: `{ "type": "client_presence_check", "text": "...", "ts": <ms> }`
+  static const String clientPresenceCheck = 'client_presence_check';
+
+  /// Default [text] sent with [clientPresenceCheck]; server may speak this or treat as context.
+  static const String clientPresenceCheckDefaultText =
+      'Are you there? Shall we end the call?';
+
   /// S→C: policy after idle or after [continueIntent].
   /// Supported shapes:
   /// - `{ "type": "session_policy", "continueSession": true|false }`

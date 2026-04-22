@@ -15,7 +15,7 @@ class SocketManager {
   WebSocket? _socket;
 
   static const String _defaultWsUrl =
-      'ws://192.168.0.20:9876/new/ws';
+      'wss://demo.nitya.ai/new/ws';
   static const String _wsUrl =
       String.fromEnvironment('VOICE_WS_URL', defaultValue: _defaultWsUrl);
 
@@ -43,9 +43,17 @@ class SocketManager {
     }
   }
 
-  String _preview(String s, [int max = 400]) {
-    if (s.length <= max) return s;
-    return '${s.substring(0, max)}…(${s.length} chars)';
+  static const int _binHeaderHexBytes = 16;
+
+  String _hexPrefix(ByteBuffer buf) {
+    final view = Uint8List.view(buf);
+    final n = view.length < _binHeaderHexBytes ? view.length : _binHeaderHexBytes;
+    if (n == 0) return '(empty)';
+    final parts = <String>[];
+    for (var i = 0; i < n; i++) {
+      parts.add(view[i].toRadixString(16).padLeft(2, '0'));
+    }
+    return parts.join(' ');
   }
 
   void _flushPending() {
@@ -102,18 +110,18 @@ class SocketManager {
               : Map<String, dynamic>.from(decoded as Map);
           _jsonInCount++;
           final t = map['type'];
-          _log(
-            '← JSON preview #$_jsonInCount type=$t ${_preview(raw)}',
-          );
+          _log('← JSON_IN #$_jsonInCount type=$t FULL:\n$raw');
           _handleJson(map);
         } catch (e, st) {
-          _log('jsonDecode failed: $e raw=${_preview(raw)} $st');
+          _log('jsonDecode failed: $e\nFULL raw:\n$raw\n$st');
         }
       } else if (event.data is ByteBuffer) {
         final buf = event.data as ByteBuffer;
         final len = buf.lengthInBytes;
         _binaryInCount++;
-        _log('← BIN #$_binaryInCount ${len}B');
+        _log(
+          '← BIN #$_binaryInCount ${len}B header($_binHeaderHexBytes B hex)=${_hexPrefix(buf)}',
+        );
         _audioController.add(Uint8List.view(buf));
       } else {
         _log('← unknown frame type=${event.data.runtimeType}');
@@ -146,7 +154,7 @@ class SocketManager {
     final s = _socket;
     if (s != null && s.readyState == WebSocket.OPEN) {
       _textOutCount++;
-      _log('→ JSON #$_textOutCount ${_preview(encoded)}');
+      _log('→ JSON_OUT #$_textOutCount FULL:\n$encoded');
       s.send(encoded);
     } else {
       while (_pendingText.length >= _maxPendingText) {
@@ -154,7 +162,7 @@ class SocketManager {
       }
       _pendingText.add(encoded);
       _log(
-        '→ JSON (queued ${_pendingText.length}) socket=${s == null ? "null" : s.readyState} ${_preview(encoded)}',
+        '→ JSON_OUT (queued ${_pendingText.length}) socket=${s == null ? "null" : s.readyState} FULL:\n$encoded',
       );
     }
   }

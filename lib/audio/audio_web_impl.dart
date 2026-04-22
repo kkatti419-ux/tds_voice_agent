@@ -11,6 +11,7 @@ import 'package:tds_voice_agent/socket/socket_manager.dart';
 external void _startAudioCapture(
   JSExportedDartFunction onPcm,
   JSExportedDartFunction? onLevel,
+  JSExportedDartFunction? onError,
 );
 
 @JS('stopAudioCapture')
@@ -28,7 +29,10 @@ class AudioWeb {
     }
   }
 
-  void start({void Function(double levelDb)? onLevel}) {
+  void start({
+    void Function(double levelDb)? onLevel,
+    void Function(String message)? onMicError,
+  }) {
     _chunkIndex = 0;
     _totalPcmBytes = 0;
     _decodeErrors = 0;
@@ -69,7 +73,13 @@ class AudioWeb {
             onLevel(level.toDouble());
           }).toJS;
 
-    _startAudioCapture(onPcmJs, onLevelJs);
+    final onErrJs = onMicError == null
+        ? null
+        : ((String msg) {
+            onMicError(msg);
+          }).toJS;
+
+    _startAudioCapture(onPcmJs, onLevelJs, onErrJs);
   }
 
   void stop() {

@@ -46,7 +46,7 @@
     }
   };
 
-  window.startAudioCapture = function (onPcm, onLevel) {
+  window.startAudioCapture = function (onPcm, onLevel, onError) {
     window.stopAudioCapture();
     let pcmFrames = 0;
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
@@ -81,6 +81,15 @@
       mute.connect(audioContext.destination);
     }).catch(function (err) {
       console.error('getUserMedia failed:', err);
+      if (typeof onError === 'function') {
+        var name = err && err.name ? err.name : 'Error';
+        var msg = err && err.message ? err.message : String(err);
+        try {
+          onError(name + ': ' + msg);
+        } catch (e) {
+          console.error('onError callback failed:', e);
+        }
+      }
     });
   };
 })();

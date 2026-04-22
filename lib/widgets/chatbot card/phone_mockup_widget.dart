@@ -283,6 +283,92 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
   Color get border =>
       isDark ? AgniColors.white12 : AgniColors.black12;
 
+  Widget _offlineStrip() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      child: Text(
+        'No internet connection.',
+        textAlign: TextAlign.center,
+        style: AppTypography.bodyMedium(
+          color: isDark ? const Color(0xFFFFB74D) : const Color(0xFFE65100),
+        ).copyWith(fontSize: 12, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Widget _micBlockedStrip(VoiceViewModel vm) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            vm.micBlockedMessage!,
+            textAlign: TextAlign.center,
+            maxLines: 5,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.bodyMedium(
+              color: isDark ? AgniColors.white70 : AgniColors.black54,
+            ).copyWith(fontSize: 11, height: 1.3),
+          ),
+          Align(
+            alignment: Alignment.center,
+            child: TextButton(
+              onPressed: vm.clearMicBlockedMessage,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Dismiss',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? AgniColors.white60 : AgniColors.black45,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _presenceCheckInStrip(VoiceViewModel vm) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Column(
+        children: [
+          Text(
+            'Check-in sent — waiting for reply (voice will play here).',
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyMedium(
+              color: isDark ? AgniColors.white70 : AgniColors.black54,
+            ).copyWith(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+          Align(
+            alignment: Alignment.center,
+            child: TextButton(
+              onPressed: vm.dismissPresenceCheckIn,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Dismiss',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? AgniColors.white60 : AgniColors.black45,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<VoiceViewModel>(
@@ -307,6 +393,10 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
           child: Column(
             children: [
               const SizedBox(height: 22),
+
+              if (vm.isOffline) _offlineStrip(),
+              if (vm.micBlockedMessage != null) _micBlockedStrip(vm),
+              if (vm.presenceCheckSent) _presenceCheckInStrip(vm),
 
               /// Status
               Text(
