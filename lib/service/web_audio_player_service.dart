@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_sound/flutter_sound.dart';
 import 'package:universal_html/html.dart' as html;
 
 /// Console / DevTools filter: `VoiceAudio`
@@ -18,7 +17,6 @@ void _voiceAudioLog(String message) {
 }
 
 class AudioPlayerService {
-  FlutterSoundPlayer? _player;
   html.AudioElement? _webAudio;
   final Queue<_QueueItem> _queue = Queue<_QueueItem>();
   bool _isPlaying = false;
@@ -86,15 +84,8 @@ class AudioPlayerService {
     }
 
     try {
-      if (kIsWeb) {
-        _webAudio?.pause();
-        _webAudio = null;
-      } else {
-        final player = _player;
-        if (player != null) {
-          await player.stopPlayer();
-        }
-      }
+      _webAudio?.pause();
+      _webAudio = null;
     } catch (_) {}
   }
 
@@ -169,10 +160,6 @@ class AudioPlayerService {
               await _playWebBytes(next.bytes!);
             } else if (next.url != null) {
               await _playWeb(next.url!);
-            }
-          } else {
-            if (next.url != null) {
-              await _playNative(next.url!);
             }
           }
           if (!next.completer.isCompleted) next.completer.complete();
@@ -360,23 +347,6 @@ class AudioPlayerService {
     await done.future;
   }
 
-  Future<void> _playNative(String url) async {
-    final player = _player ??= FlutterSoundPlayer();
-    if (!player.isOpen()) {
-      await player.openPlayer();
-    }
-
-    final done = Completer<void>();
-    await player.startPlayer(
-      fromURI: url,
-      codec: Codec.mp3,
-      whenFinished: () {
-        if (!done.isCompleted) done.complete();
-      },
-    );
-
-    await done.future;
-  }
 }
 
 class _QueueItem {

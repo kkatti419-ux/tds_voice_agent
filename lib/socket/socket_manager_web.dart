@@ -49,6 +49,23 @@ class SocketManager {
     return '${s.substring(0, max)}…(${s.length} chars)';
   }
 
+  Future<Uint8List?> _blobToBytes(Blob blob) async {
+    final reader = FileReader();
+    final done = Completer<Uint8List?>();
+
+    reader.onLoad.listen((_) {
+      final result = reader.result;
+      if (result is ByteBuffer) {
+        done.complete(Uint8List.view(result));
+      } else {
+        done.complete(null);
+      }
+    });
+    reader.onError.listen((_) => done.complete(null));
+    reader.readAsArrayBuffer(blob);
+    return done.future;
+  }
+
   void _flushPending() {
     final s = _socket;
     if (s == null || s.readyState != WebSocket.OPEN) return;
@@ -116,6 +133,18 @@ class SocketManager {
         _binaryInCount++;
         _log('← BIN #$_binaryInCount ${len}B');
         _audioController.add(Uint8List.view(buf));
+      } else if (event.data is Blob) {
+        final blob = event.data as Blob;
+        _binaryInCount++;
+        _log('← BIN(BLOB) #$_binaryInCount ${blob.size}B');
+        unawaited(() async {
+          final bytes = await _blobToBytes(blob);
+          if (bytes == null || bytes.isEmpty) {
+            _log('blob decode failed or empty');
+            return;
+          }
+          _audioController.add(bytes);
+        }());
       } else {
         _log('← unknown frame type=${event.data.runtimeType}');
       }
