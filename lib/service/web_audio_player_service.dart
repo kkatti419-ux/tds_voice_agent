@@ -21,11 +21,19 @@ void _voiceAudioLog(String message) {
   developer.log(message, name: _kLogName);
 }
 
+void _voiceAudioLogPrint(String message) {
+  _voiceAudioLog(message);
+  print('[$_kLogName] $message');
+}
+
 class AudioPlayerService {
   FlutterSoundPlayer? _player;
   html.AudioElement? _webAudio;
   final Queue<_QueueItem> _queue = Queue<_QueueItem>();
   bool _isPlaying = false;
+
+  /// Correlates enqueue → PLAY_START → PLAY_DONE / PLAY_FAIL in DevTools.
+  int _nextPlayId = 0;
 
   /// In-flight HTML playback await; [stop] completes this so [_playLoop] never hangs.
   Completer<void>? _activePlaybackCompleter;
@@ -144,8 +152,17 @@ class AudioPlayerService {
   }
 
   Future<void> play(String url) {
+    final playId = ++_nextPlayId;
+    final urlShort =
+        url.length > 80 ? '${url.substring(0, 80)}…' : url;
+    
+    _voiceAudioLogPrint(
+      'play URL ENQUEUE id=$playId url=$urlShort '
+      'queueLen=${_queue.length} isPlaying=$_isPlaying stopGen=$_stopGeneration',
+    );
     final completer = Completer<void>();
-    _queue.add(_QueueItem.url(url, completer));
+    _queue.add(_QueueItem.url(url, completer, playId));
+    _voiceAudioLog('play URL ENQUEUED id=$playId queueLen=${_queue.length}');
     if (_isPlaying) return completer.future;
 
     _isPlaying = true;
@@ -161,8 +178,14 @@ class AudioPlayerService {
     if (bytes.isEmpty) {
       return Future<void>.value();
     }
+    final playId = ++_nextPlayId;
+    _voiceAudioLogPrint(
+      'playBytes ENQUEUE id=$playId len=${bytes.length} '
+      'queueLen=${_queue.length} isPlaying=$_isPlaying stopGen=$_stopGeneration',
+    );
     final completer = Completer<void>();
-    _queue.add(_QueueItem.bytes(bytes, completer));
+    _queue.add(_QueueItem.bytes(bytes, completer, playId));
+    _voiceAudioLog('playBytes ENQUEUED id=$playId queueLen=${_queue.length}');
     if (_isPlaying) return completer.future;
 
     _isPlaying = true;
@@ -189,22 +212,38 @@ class AudioPlayerService {
     try {
       while (_queue.isNotEmpty) {
         final next = _queue.removeFirst();
+        final kind = next.bytes != null ? 'bytes' : 'url';
+        final detail = next.bytes != null
+            ? 'len=${next.bytes!.length}'
+            : () {
+                final u = next.url!;
+                return u.length > 72 ? 'url=${u.substring(0, 72)}…' : 'url=$u';
+              }();
+        _voiceAudioLogPrint(
+          'PLAY_START id=${next.playId} kind=$kind $detail '
+          'remainingQueue=${_queue.length} stopGen=$_stopGeneration',
+        );
 
         try {
           if (kIsWeb) {
             if (next.bytes != null) {
-              await _playWebBytes(next.bytes!);
+              await _playWebBytes(next.bytes!, playId: next.playId);
             } else if (next.url != null) {
-              await _playWeb(next.url!);
+              await _playWeb(next.url!, playId: next.playId);
             }
           } else {
             if (next.url != null) {
-              await _playNative(next.url!);
+              await _playNative(next.url!, playId: next.playId);
             }
           }
           if (!next.completer.isCompleted) next.completer.complete();
+          _voiceAudioLogPrint(
+            'PLAY_DONE id=${next.playId} kind=$kind stopGen=$_stopGeneration',
+          );
         } catch (e) {
-          _voiceAudioLog('_playLoop item error: $e');
+          _voiceAudioLogPrint(
+            'PLAY_FAIL id=${next.playId} kind=$kind error=$e stopGen=$_stopGeneration',
+          );
           if (!next.completer.isCompleted) {
             next.completer.completeError(e);
           }
@@ -212,17 +251,18 @@ class AudioPlayerService {
       }
     } finally {
       _isPlaying = false;
-      _voiceAudioLog('_playLoop exit');
+      _voiceAudioLog('_playLoop exit queueEmpty=${_queue.isEmpty}');
     }
   }
 
-  Future<void> _playWeb(String url) async {
+  Future<void> _playWeb(String url, {required int playId}) async {
     final done = Completer<void>();
     _activePlaybackCompleter = done;
 
     _webAudio?.pause();
     final audio = html.AudioElement(url);
     _webAudio = audio;
+    _voiceAudioLog('url AudioElement created id=$playId');
 
     void completeSafe() {
       if (!done.isCompleted) done.complete();
@@ -329,36 +369,54 @@ class AudioPlayerService {
     }
   }
 
-  Future<void> _playWebBytes(Uint8List bytes) async {
+  Future<void> _playWebBytes(Uint8List bytes, {required int playId}) async {
+    final sw = Stopwatch()..start();
     final mime = _guessAudioMime(bytes);
     final head4 = bytes.length >= 4 ? _headerHex(bytes, 4) : _headerHex(bytes, bytes.length);
     _voiceAudioLog(
-      'playBytes: len=${bytes.length} mime=$mime header4=$head4',
+      'playBytes pipeline id=$playId len=${bytes.length} mime=$mime header4=$head4',
     );
 
-    if (await _tryPlayWebBytesDecode(bytes)) {
+    if (await _tryPlayWebBytesDecode(bytes, playId: playId)) {
+      _voiceAudioLogPrint(
+        'playBytes DECODE_PATH_OK id=$playId elapsedMs=${sw.elapsedMilliseconds}',
+      );
       return;
     }
-    await _playWebBytesBlob(bytes);
+    _voiceAudioLog('playBytes id=$playId decode skipped/failed → blob fallback');
+    await _playWebBytesBlob(bytes, playId: playId);
+    _voiceAudioLogPrint(
+      'playBytes BLOB_PATH_DONE id=$playId elapsedMs=${sw.elapsedMilliseconds}',
+    );
   }
 
   /// HTML reference: [AudioContext.decodeAudioData] + [AudioBufferSourceNode] queue.
-  Future<bool> _tryPlayWebBytesDecode(Uint8List bytes) async {
+  Future<bool> _tryPlayWebBytesDecode(Uint8List bytes, {required int playId}) async {
     try {
       await ensurePlaybackAudioContext();
       final ctx = _sharedDecodeContext;
-      if (ctx == null) return false;
+      if (ctx == null) {
+        _voiceAudioLog('decode id=$playId: no AudioContext');
+        return false;
+      }
 
       final copy = (bytes.offsetInBytes == 0 &&
               bytes.lengthInBytes == bytes.buffer.lengthInBytes)
           ? bytes
           : Uint8List.fromList(bytes);
 
+      final decodeSw = Stopwatch()..start();
       final audioBuf = await js_bridge.decodeAudioDataPromise(
         ctx,
         copy.buffer,
       );
-      if (audioBuf == null) return false;
+      decodeSw.stop();
+      if (audioBuf == null) {
+        _voiceAudioLog(
+          'decode id=$playId: decodeAudioData returned null (${decodeSw.elapsedMilliseconds}ms)',
+        );
+        return false;
+      }
 
       final done = Completer<void>();
       _activePlaybackCompleter = done;
@@ -379,16 +437,20 @@ class AudioPlayerService {
       });
 
       src.start(0);
-      _voiceAudioLog('WebAudio decode: playing len=${bytes.length}');
+      _voiceAudioLogPrint(
+        'WebAudio BUFFER_PLAYING id=$playId inLen=${bytes.length} '
+        'decodeMs=${decodeSw.elapsedMilliseconds}',
+      );
       await done.future;
+      _voiceAudioLog('WebAudio BUFFER_ENDED id=$playId inLen=${bytes.length}');
       return true;
     } catch (e) {
-      _voiceAudioLog('decodeAudioData / WebAudio: $e');
+      _voiceAudioLog('decodeAudioData / WebAudio id=$playId: $e');
       return false;
     }
   }
 
-  Future<void> _playWebBytesBlob(Uint8List bytes) async {
+  Future<void> _playWebBytesBlob(Uint8List bytes, {required int playId}) async {
     final mime = _guessAudioMime(bytes);
     final done = Completer<void>();
     _activePlaybackCompleter = done;
@@ -430,12 +492,14 @@ class AudioPlayerService {
     });
 
     try {
-      _voiceAudioLog('blob play: start');
+      _voiceAudioLogPrint(
+        'blob play START id=$playId len=${bytes.length} mime=$mime',
+      );
       await _playElementWithRetry(audio, context: 'blob');
-      _voiceAudioLog('blob play: play() resolved');
+      _voiceAudioLogPrint('blob play PLAY_RESOLVED id=$playId len=${bytes.length}');
     } catch (e) {
-      _voiceAudioLog(
-        'audio.play() failed after retry: $e — if NotAllowedError, tap mic once to unlock audio',
+      _voiceAudioLogPrint(
+        'blob play PLAY_FAILED id=$playId error=$e — if NotAllowedError, tap mic once to unlock audio',
       );
       _logMediaError(audio, context: 'after play() catch');
       completeSafe();
@@ -444,7 +508,8 @@ class AudioPlayerService {
     await done.future;
   }
 
-  Future<void> _playNative(String url) async {
+  Future<void> _playNative(String url, {required int playId}) async {
+    _voiceAudioLog('native PLAY id=$playId url=${url.length > 64 ? "${url.substring(0, 64)}…" : url}');
     final player = _player ??= FlutterSoundPlayer();
     if (!player.isOpen()) {
       await player.openPlayer();
@@ -460,14 +525,16 @@ class AudioPlayerService {
     );
 
     await done.future;
+    _voiceAudioLog('native PLAY_DONE id=$playId');
   }
 }
 
 class _QueueItem {
-  _QueueItem.url(this.url, this.completer) : bytes = null;
-  _QueueItem.bytes(this.bytes, this.completer) : url = null;
+  _QueueItem.url(this.url, this.completer, this.playId) : bytes = null;
+  _QueueItem.bytes(this.bytes, this.completer, this.playId) : url = null;
 
   final String? url;
   final Uint8List? bytes;
   final Completer<void> completer;
+  final int playId;
 }

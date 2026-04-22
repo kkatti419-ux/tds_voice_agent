@@ -5,8 +5,9 @@ import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
+import 'package:tds_voice_agent/core/wire_logs.dart';
 
-class SocketManager { 
+class SocketManager {
   static final SocketManager _instance = SocketManager._internal();
   factory SocketManager() => _instance;
 
@@ -27,6 +28,8 @@ class SocketManager {
     return _defaultWsUrl;
   }
 
+  static String get currentWsUrl => _wsUrl;
+
   final _jsonController = StreamController<Map<String, dynamic>>.broadcast();
   final _audioController = StreamController<Uint8List>.broadcast();
 
@@ -45,11 +48,24 @@ class SocketManager {
   int _textOutCount = 0;
   int _binaryOutCount = 0;
 
+  Timer? _reconnectTimer;
+  Completer<void>? _openCompleter;
+
+  /// After [close], [onClose] will not schedule reconnect until the next [connect]/[connectAsync].
+  bool _userClosed = false;
+
+  bool get isConnected =>
+      _socket != null && _socket!.readyState == WebSocket.OPEN;
+
+  bool get isConnecting =>
+      _socket != null && _socket!.readyState == WebSocket.CONNECTING;
+
   void _log(String message) {
-    if (kDebugMode) {
-      debugPrint('[SocketManager] $message');
-      developer.log(message, name: 'SocketManager');
-    }
+    if (!agniWireLogsEnabled) return;
+    debugPrint('[SocketManager] $message');
+    developer.log(message, name: 'SocketManager');
+    // Browser console parity with HTML `console.log` (debugPrint can throttle).
+    print('[SocketManager] $message');
   }
 
   static const int _binHeaderHexBytes = 16;
@@ -63,6 +79,25 @@ class SocketManager {
       parts.add(view[i].toRadixString(16).padLeft(2, '0'));
     }
     return parts.join(' ');
+  }
+
+  void _cancelReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+  }
+
+  void _completeOpenSuccess() {
+    final c = _openCompleter;
+    if (c != null && !c.isCompleted) {
+      c.complete();
+    }
+  }
+
+  void _completeOpenError(Object error) {
+    final c = _openCompleter;
+    if (c != null && !c.isCompleted) {
+      c.completeError(error);
+    }
   }
 
   void _flushPending() {
@@ -86,15 +121,35 @@ class SocketManager {
     _pendingBinary.clear();
   }
 
+  /// Opens the WebSocket unless already OPEN or CONNECTING (AgniApp-style).
   void connect() {
+    _userClosed = false;
+    _connectSocket();
+  }
+
+  /// Resolves when the socket reaches OPEN for this attempt (or immediately if already OPEN).
+  Future<void> connectAsync() async {
+    connect();
+    if (isConnected) return;
+    final c = _openCompleter;
+    if (c != null && !c.isCompleted) {
+      return c.future;
+    }
+  }
+
+  void _connectSocket() {
     if (_socket != null) {
       final state = _socket!.readyState;
       if (state == WebSocket.OPEN || state == WebSocket.CONNECTING) {
-        _log('connect skipped (already ${state == WebSocket.OPEN ? "OPEN" : "CONNECTING"}) url=$_wsUrl');
+        _log(
+          'connect skipped (already ${state == WebSocket.OPEN ? "OPEN" : "CONNECTING"}) url=$_wsUrl',
+        );
         return;
       }
     }
 
+    _cancelReconnect();
+    _openCompleter = Completer<void>();
     _log('connect → new WebSocket url=$_wsUrl');
     _socket?.close();
     _socket = WebSocket(_wsUrl);
@@ -103,10 +158,12 @@ class SocketManager {
     _socket!.onOpen.listen((_) {
       _log('onOpen READY state=${_socket?.readyState}');
       _flushPending();
+      _completeOpenSuccess();
     });
 
     _socket!.onError.listen((Object e) {
       _log('onError: $e');
+      _completeOpenError(e);
     });
 
     _socket!.onMessage.listen((event) {
@@ -124,7 +181,7 @@ class SocketManager {
         } catch (e, st) {
           _log('jsonDecode failed: $e\nFULL raw:\n$raw\n$st');
         }
-      } else if (event.data is ByteBuffer) { 
+      } else if (event.data is ByteBuffer) {
         final buf = event.data as ByteBuffer;
         final len = buf.lengthInBytes;
         _binaryInCount++;
@@ -141,10 +198,34 @@ class SocketManager {
 
     _socket!.onClose.listen((CloseEvent e) {
       _log(
-        '########onClose code=${e.code} reason=${e.reason} wasClean=${e.wasClean} → reconnect in 2s',
+        '########onClose code=${e.code} reason=${e.reason} wasClean=${e.wasClean}',
       );
-      Future.delayed(const Duration(seconds: 2), connect);
+      final openWait = _openCompleter;
+      if (openWait != null && !openWait.isCompleted) {
+        _completeOpenError(
+          StateError('WebSocket closed before open (code=${e.code})'),
+        );
+      }
+      if (_userClosed) {
+        _log('onClose: user closed — no reconnect');
+        return;
+      }
+      _log('→ reconnect in 2s');
+      _reconnectTimer = Timer(const Duration(seconds: 2), () {
+        if (_userClosed) return;
+        _connectSocket();
+      });
     });
+  }
+
+  /// Stops auto-reconnect and closes the socket (e.g. when [VoiceViewModel] is disposed).
+  void close() {
+    _userClosed = true;
+    _cancelReconnect();
+    _socket?.close();
+    _socket = null;
+    _completeOpenError(StateError('SocketManager closed'));
+    _openCompleter = null;
   }
 
   /// Keepalive: many voice backends send periodic JSON `server_ping`; we must reply with `pong`
@@ -204,4 +285,3 @@ class SocketManager {
     send({'type': 'interrupt'});
   }
 }
-

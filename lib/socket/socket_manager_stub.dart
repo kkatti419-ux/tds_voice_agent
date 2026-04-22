@@ -9,13 +9,23 @@ class SocketManager {
 
   SocketManager._internal();
 
+  static String get currentWsUrl => '';
+
   final _jsonController = StreamController<Map<String, dynamic>>.broadcast();
   final _audioController = StreamController<Uint8List>.broadcast();
 
   Stream<Map<String, dynamic>> get jsonStream => _jsonController.stream;
   Stream<Uint8List> get audioStream => _audioController.stream;
 
+  bool get isConnected => false;
+
+  bool get isConnecting => false;
+
   void connect() {}
+
+  Future<void> connectAsync() async {}
+
+  void close() {}
 
   void send(Map<String, dynamic> data) {}
 
@@ -23,4 +33,3 @@ class SocketManager {
 
   void interrupt() {}
 }
-

@@ -13,6 +13,7 @@ import '../audio/audio_web.dart';
 import '../model/voice_message.dart';
 import '../service/audio_record_service.dart';
 import '../service/voice_service.dart';
+import '../core/wire_logs.dart';
 import '../socket/socket_manager.dart';
 import '../voice/listening_idle_policy.dart';
 import '../voice/voice_session_protocol.dart';
@@ -23,6 +24,13 @@ class VoiceViewModel extends ChangeNotifier {
     if (verbose && !_verboseLogs) return;
     debugPrint('[VoiceVM] $message');
     developer.log(message, name: 'VoiceVM');
+  }
+
+  void _wireLog(String message) {
+    if (!agniWireLogsEnabled) return;
+    debugPrint(message);
+    developer.log(message, name: 'VoiceVM');
+    print(message);
   }
 
   /// When false, only important logs (barge-in, mute, errors, session).
@@ -104,7 +112,30 @@ class VoiceViewModel extends ChangeNotifier {
       _vmLog('init: WebSocket + streams (listen before connect)');
       _jsonSub = _socket.jsonStream.listen(_onWebJson);
       _audioSub = _socket.audioStream.listen(_onWebAudio);
-      _socket.connect();
+      unawaited(
+        _socket.connectAsync().then((_) {
+          if (agniWireLogsEnabled) {
+            _wireLog(
+              '[VoiceVM] connect() resolved — url=${SocketManager.currentWsUrl} '
+              'isConnected=${_socket.isConnected} '
+              'isConnecting=${_socket.isConnecting}',
+            );
+          }
+          unawaited(AudioPlayerService.ensurePlaybackAudioContext());
+          notifyListeners();
+        }).catchError((Object e, StackTrace st) {
+          if (agniWireLogsEnabled) {
+            _wireLog('[VoiceVM] connect() failed: $e');
+          }
+          developer.log(
+            'connectAsync failed',
+            name: 'VoiceVM',
+            error: e,
+            stackTrace: st,
+          );
+          notifyListeners();
+        }),
+      );
     }
   }
 
@@ -133,6 +164,12 @@ class VoiceViewModel extends ChangeNotifier {
 
   /// True when no usable network interface (informational only).
   bool get isOffline => _isOffline;
+
+  /// Web: voice WebSocket is OPEN (AgniApp-style connection state).
+  bool get webSocketConnected => kIsWeb && _socket.isConnected;
+
+  /// Web: voice WebSocket is CONNECTING.
+  bool get webSocketConnecting => kIsWeb && _socket.isConnecting;
 
   /// Shown when [getUserMedia] fails in the browser (see [web/audio_processor.js]).
   String? get micBlockedMessage => _micBlockedMessage;
@@ -211,6 +248,9 @@ class VoiceViewModel extends ChangeNotifier {
     _connectivitySub?.cancel();
     _jsonSub?.cancel();
     _audioSub?.cancel();
+    if (kIsWeb) {
+      _socket.close();
+    }
     super.dispose();
   }
 
@@ -551,9 +591,11 @@ class VoiceViewModel extends ChangeNotifier {
 
   /// Opens a web assistant turn when the backend signals a response (transcript, [status] speaking, or [ai_stream]).
   /// Idempotent: safe to call on every matching JSON frame while already in a turn.
+  ///
+  /// Does not require [isListening]: the server may stream TTS before or without the local mic
+  /// (same idea as AgniApp always wiring `audioChunks` while connected).
   void _beginWebAssistantTurn() {
     if (!kIsWeb) return;
-    if (!isListening) return;
     _exitAwaitingPolicyForAssistantSignal();
     if (_sessionPhase != VoiceSessionPhase.listening) return;
     if (_awaitingWebTurn) {
@@ -628,20 +670,20 @@ class VoiceViewModel extends ChangeNotifier {
 
   void _onWebJson(Map<String, dynamic> data) {
     final type = data['type'] as String?;
-    if (kDebugMode) {
+    if (agniWireLogsEnabled) {
       _rxMsgCount++;
       final latency = data['latency'];
-      debugPrint(
-        '[VoiceVM] message[$_rxMsgCount] type=$type '
+      print('[VoiceVM] Received message: $data');
+      _wireLog(
+        '[VoiceVM] ✅ message[$_rxMsgCount] type=${type ?? "unknown"} '
         'keys=${data.keys.join(",")} '
         'latency=${latency is Map ? latency : "n/a"}',
       );
       try {
         final full = jsonEncode(data);
-        debugPrint('[VoiceVM] json ← FULL type=$type $full');
-        developer.log(full, name: 'VoiceVM');
+        _wireLog('[VoiceVM] json ← FULL type=$type $full');
       } catch (_) {
-        debugPrint('[VoiceVM] json ← FULL (non-encodable) type=$type $data');
+        _wireLog('[VoiceVM] json ← FULL (non-encodable) type=$type $data');
       }
     }
 
@@ -657,7 +699,7 @@ class VoiceViewModel extends ChangeNotifier {
         if (kIsWeb && isListening && text.isNotEmpty) {
           unawaited(_playerService.stop());
         }
-        if (kIsWeb && isListening && text.isNotEmpty) {
+        if (kIsWeb && text.isNotEmpty) {
           _beginWebAssistantTurn();
         }
         if (_userMsgIndex != null && text.isNotEmpty) {
@@ -676,13 +718,13 @@ class VoiceViewModel extends ChangeNotifier {
       case 'status':
         _serverStatus = (data['text'] ?? '').toString();
         final statusLower = _serverStatus?.toLowerCase() ?? '';
-        if (kIsWeb && isListening && statusLower == 'speaking') {
+        if (kIsWeb && statusLower == 'speaking') {
           _beginWebAssistantTurn();
         }
         notifyListeners();
         break;
       case 'ai_stream':
-        if (kIsWeb && isListening) {
+        if (kIsWeb) {
           _beginWebAssistantTurn();
         }
         final delta = (data['text'] ?? '').toString();
@@ -756,11 +798,12 @@ class VoiceViewModel extends ChangeNotifier {
 
   void _onWebAudio(Uint8List chunk) {
     if (chunk.isEmpty) return;
-    if (kDebugMode) {
+    if (agniWireLogsEnabled) {
       _rxChunkCount++;
       _rxChunkBytes += chunk.length;
-      debugPrint(
-        '[VoiceVM] audio chunk[$_rxChunkCount] bytes=${chunk.length} total=$_rxChunkBytes',
+      _wireLog(
+        '[VoiceVM] 🔊 audio chunk[$_rxChunkCount] '
+        'bytes=${chunk.length} total=$_rxChunkBytes',
       );
     }
     final inGrace = _ttsGraceUntil != null &&
