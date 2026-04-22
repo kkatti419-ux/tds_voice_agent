@@ -93,13 +93,18 @@ class VoiceViewModel extends ChangeNotifier {
   /// Throttle logs when binary TTS arrives outside an active turn.
   DateTime? _lastVoiceAudioDropLogAt;
 
+  /// AgniApp-style wire diagnostics (debug only).
+  int _rxMsgCount = 0;
+  int _rxChunkCount = 0;
+  int _rxChunkBytes = 0;
+
   VoiceViewModel() {
     _initConnectivity();
     if (kIsWeb) {
-      _vmLog('init: WebSocket + streams');
-      _socket.connect();
+      _vmLog('init: WebSocket + streams (listen before connect)');
       _jsonSub = _socket.jsonStream.listen(_onWebJson);
       _audioSub = _socket.audioStream.listen(_onWebAudio);
+      _socket.connect();
     }
   }
 
@@ -624,6 +629,13 @@ class VoiceViewModel extends ChangeNotifier {
   void _onWebJson(Map<String, dynamic> data) {
     final type = data['type'] as String?;
     if (kDebugMode) {
+      _rxMsgCount++;
+      final latency = data['latency'];
+      debugPrint(
+        '[VoiceVM] message[$_rxMsgCount] type=$type '
+        'keys=${data.keys.join(",")} '
+        'latency=${latency is Map ? latency : "n/a"}',
+      );
       try {
         final full = jsonEncode(data);
         debugPrint('[VoiceVM] json ← FULL type=$type $full');
@@ -744,6 +756,13 @@ class VoiceViewModel extends ChangeNotifier {
 
   void _onWebAudio(Uint8List chunk) {
     if (chunk.isEmpty) return;
+    if (kDebugMode) {
+      _rxChunkCount++;
+      _rxChunkBytes += chunk.length;
+      debugPrint(
+        '[VoiceVM] audio chunk[$_rxChunkCount] bytes=${chunk.length} total=$_rxChunkBytes',
+      );
+    }
     final inGrace = _ttsGraceUntil != null &&
         DateTime.now().isBefore(_ttsGraceUntil!);
     final acceptTts =

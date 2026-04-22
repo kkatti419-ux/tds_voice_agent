@@ -6,7 +6,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 
-class SocketManager {
+class SocketManager { 
   static final SocketManager _instance = SocketManager._internal();
   factory SocketManager() => _instance;
 
@@ -14,10 +14,18 @@ class SocketManager {
 
   WebSocket? _socket;
 
-  static const String _defaultWsUrl =
-      'wss://demo.nitya.ai/new/ws';
-  static const String _wsUrl =
-      String.fromEnvironment('VOICE_WS_URL', defaultValue: _defaultWsUrl);
+  static const String _defaultWsUrl = 'wss://demo.nitya.ai/new/ws';
+  static const String _agniWsEnv =
+      String.fromEnvironment('AGNI_WS_URL', defaultValue: '');
+  static const String _voiceWsEnv =
+      String.fromEnvironment('VOICE_WS_URL', defaultValue: '');
+
+  /// Prefer [AGNI_WS_URL] when set (AgniApp parity), else [VOICE_WS_URL], else default.
+  static String get _wsUrl {
+    if (_agniWsEnv.isNotEmpty) return _agniWsEnv;
+    if (_voiceWsEnv.isNotEmpty) return _voiceWsEnv;
+    return _defaultWsUrl;
+  }
 
   final _jsonController = StreamController<Map<String, dynamic>>.broadcast();
   final _audioController = StreamController<Uint8List>.broadcast();
@@ -33,6 +41,7 @@ class SocketManager {
 
   int _jsonInCount = 0;
   int _binaryInCount = 0;
+  int _binaryRxBytesTotal = 0;
   int _textOutCount = 0;
   int _binaryOutCount = 0;
 
@@ -115,12 +124,14 @@ class SocketManager {
         } catch (e, st) {
           _log('jsonDecode failed: $e\nFULL raw:\n$raw\n$st');
         }
-      } else if (event.data is ByteBuffer) {
+      } else if (event.data is ByteBuffer) { 
         final buf = event.data as ByteBuffer;
         final len = buf.lengthInBytes;
         _binaryInCount++;
+        _binaryRxBytesTotal += len;
         _log(
-          '← BIN #$_binaryInCount ${len}B header($_binHeaderHexBytes B hex)=${_hexPrefix(buf)}',
+          '← BIN #$_binaryInCount ${len}B totalRx=$_binaryRxBytesTotal B '
+          'header($_binHeaderHexBytes B hex)=${_hexPrefix(buf)}',
         );
         _audioController.add(Uint8List.view(buf));
       } else {
