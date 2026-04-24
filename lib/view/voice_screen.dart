@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:tds_voice_agent/model/agni_content.dart';
 import 'package:tds_voice_agent/routing/app_routes.dart';
+import 'package:tds_voice_agent/theme/theme_mode_notifier.dart';
 import 'package:tds_voice_agent/widgets/earth/earth_section.dart';
 import 'package:tds_voice_agent/widgets/feature/features_section.dart';
 import 'package:tds_voice_agent/widgets/footer_section.dart';
@@ -14,15 +16,8 @@ import 'package:tds_voice_agent/widgets/stats/stats_section.dart';
 import '../core/agni_colors.dart';
 import '../theme/app_typography.dart';
 
-class VoiceScreen extends StatefulWidget {
+class VoiceScreen extends StatelessWidget {
   const VoiceScreen({super.key});
-
-  @override
-  State<VoiceScreen> createState() => _VoiceScreenState();
-}
-
-class _VoiceScreenState extends State<VoiceScreen> {
-  bool _isDark = true;
 
   static final AgniContent _defaultContent = AgniContent(
     navItems: const ['Solutions', 'Industries', 'Platform', 'Pricing'],
@@ -36,19 +31,19 @@ class _VoiceScreenState extends State<VoiceScreen> {
     ],
     features: const [
       FeatureItem(
-        'AI',
+        '🤖',
         'Agentic AI',
         'Autonomous enterprise workflows.',
         'Live',
       ),
       FeatureItem(
-        'VO',
+        '🎙',
         'Voice',
         'Multilingual speech interactions.',
         'Realtime',
       ),
       FeatureItem(
-        'AU',
+        '⚙️',
         'Automation',
         'End-to-end process automation.',
         'Secure',
@@ -81,10 +76,12 @@ class _VoiceScreenState extends State<VoiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        context.watch<ThemeModeNotifier>().themeMode == ThemeMode.dark;
     return AgniLandingPage(
       content: _defaultContent,
-      isDark: _isDark,
-      onToggleTheme: () => setState(() => _isDark = !_isDark),
+      isDark: isDark,
+      onToggleTheme: () => context.read<ThemeModeNotifier>().toggle(),
     );
   }
 }
@@ -317,17 +314,7 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                           isDark: isDark,
                         ),
                         // _buildStats(),
-                        StatsSection(
-                          isDark: false,
-                          stats: [
-                            StatItem(
-                              value: "2,100+",
-                              description: "Businesses",
-                            ),
-                            StatItem(value: "12+", description: "Countries"),
-                            StatItem(value: "98%", description: "Success Rate"),
-                          ],
-                        ),
+                        StatsSection(isDark: isDark, stats: content.stats),
                         ComparisonsSection(
                           comparisons: content.comparisons,
                           isDark: isDark,

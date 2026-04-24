@@ -92,75 +92,67 @@ class StatCard extends StatelessWidget {
   });
 
   Color get textSecondary => isDark ? AgniColors.white60 : AgniColors.black54;
-
-  Color get cardColor =>
-      isDark ? AgniColors.darkBg : AgniColors.lightBg.withOpacity(0.8);
-
-  final LinearGradient gradText = const LinearGradient(
-    colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)],
-  );
+  Color get cardColor => isDark ? AgniColors.darkSurface : Colors.white;
+  Color get borderColor => isDark
+      ? AgniColors.darkBorder.withOpacity(0.15)
+      : AgniColors.oceanMid.withOpacity(0.12);
+  List<Color> get accentColors => isDark
+      ? [AgniColors.oceanBright, AgniColors.forestBright]
+      : [AgniColors.oceanMid, AgniColors.forestMid];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 24),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AgniColors.neutralGrey.withOpacity(0.15)),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: borderColor),
         boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: AgniColors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
+          BoxShadow(
+            color: isDark
+                ? AgniColors.black.withOpacity(0.25)
+                : AgniColors.black.withOpacity(0.08),
+            blurRadius: isDark ? 28 : 18,
+            offset: const Offset(0, 12),
+          ),
         ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          /// Gradient animated number
-          ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [Color(0xFF5B6CFF), Color(0xFF7B61FF), Color(0xFF8E44AD)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ).createShader(bounds),
-            child: Text(
-              value,
-              textAlign: TextAlign.center,
-              style: AppTypography.displaySmall(color: AgniColors.white).copyWith(
-                fontSize: 36,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
+          Container(
+            height: 4,
+            width: 68,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: accentColors,
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
               ),
+              borderRadius: BorderRadius.circular(16),
             ),
           ),
-
-          // ShaderMask(
-          //   shaderCallback: (bounds) =>
-          //       gradText.createShader(bounds),
-          //   child: Text(
-          //     value,
-          //     textAlign: TextAlign.center,
-          //     style: AppTypography.displaySmall(
-          //       color: Colors.white,
-          //     ).copyWith(
-          //       fontSize: 36, // smaller & cleaner
-          //       fontWeight: FontWeight.w700,
-          //     ),
-          //   ),
-          // ),
-          const SizedBox(height: 6),
-
-          /// Description text
+          const SizedBox(height: 20),
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style:
+                AppTypography.displaySmall(
+                  color: isDark ? AgniColors.white : AgniColors.lightOceanDeep,
+                ).copyWith(
+                  fontSize: 38,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
+                ),
+          ),
+          const SizedBox(height: 14),
           Text(
             description,
             textAlign: TextAlign.center,
             style: AppTypography.bodyMedium(
               color: textSecondary,
-            ).copyWith(fontSize: 20, letterSpacing: 0.3),
+            ).copyWith(fontSize: 16, height: 1.6),
           ),
         ],
       ),

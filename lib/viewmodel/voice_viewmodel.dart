@@ -116,7 +116,9 @@ class VoiceViewModel extends ChangeNotifier {
   }
 
   void _initConnectivity() {
-    _connectivitySub = _connectivity.onConnectivityChanged.listen(_onConnectivityChanged);
+    _connectivitySub = _connectivity.onConnectivityChanged.listen(
+      _onConnectivityChanged,
+    );
     unawaited(_refreshConnectivityOnce());
   }
 
@@ -310,10 +312,7 @@ class VoiceViewModel extends ChangeNotifier {
       isListening = true;
       notifyListeners();
 
-      _audioWeb.start(
-        onLevel: _onAmplitude,
-        onMicError: _onMicCaptureError,
-      );
+      _audioWeb.start(onLevel: _onAmplitude, onMicError: _onMicCaptureError);
       _scheduleIdleNoSpeechTimer();
       _schedulePresencePromptTimer();
       unawaited(AudioPlayerService.ensurePlaybackAudioContext());
@@ -557,7 +556,7 @@ class VoiceViewModel extends ChangeNotifier {
 
   /// Opens a web assistant turn when the backend signals a response (transcript, [status] speaking, or [ai_stream]).
   /// Idempotent: safe to call on every matching JSON frame while already in a turn.
-  void _beginWebAssistantTurn() {
+  Future<void> _beginWebAssistantTurn() async {
     if (!kIsWeb) return;
 
     // ✅ RESET DEBUG
@@ -793,20 +792,23 @@ class VoiceViewModel extends ChangeNotifier {
         '[VoiceVM] audio chunk[$_rxChunkCount] bytes=${chunk.length} total=$_rxChunkBytes',
       );
     }
-    final inGrace = _ttsGraceUntil != null &&
-        DateTime.now().isBefore(_ttsGraceUntil!);
-    final acceptTts =
-        _awaitingWebTurn || inGrace || _expectingAssistantBinary;
+    final inGrace =
+        _ttsGraceUntil != null && DateTime.now().isBefore(_ttsGraceUntil!);
+    final acceptTts = _awaitingWebTurn || inGrace || _expectingAssistantBinary;
     if (kIsWeb && !acceptTts) {
       final now = DateTime.now();
       if (_lastVoiceAudioDropLogAt == null ||
-          now.difference(_lastVoiceAudioDropLogAt!) >= const Duration(milliseconds: 800)) {
+          now.difference(_lastVoiceAudioDropLogAt!) >=
+              const Duration(milliseconds: 800)) {
         _lastVoiceAudioDropLogAt = now;
         debugPrint(
           '[VoiceAudio] dropped binary ${chunk.length}B: not accepting TTS (no turn, grace, or pre-commit expectation)',
         );
       }
-      _vmLog('TTS chunk ignored (no active turn) ${chunk.length}B', verbose: true);
+      _vmLog(
+        'TTS chunk ignored (no active turn) ${chunk.length}B',
+        verbose: true,
+      );
       return;
     }
     if (agentTtsMuted) {
@@ -821,7 +823,12 @@ class VoiceViewModel extends ChangeNotifier {
     unawaited(
       _playerService.playBytes(bytes).catchError((Object e, StackTrace st) {
         debugPrint('[VoiceAudio] playBytes chunk failed: $e');
-        developer.log('playBytes chunk failed', name: 'VoiceVM', error: e, stackTrace: st);
+        developer.log(
+          'playBytes chunk failed',
+          name: 'VoiceVM',
+          error: e,
+          stackTrace: st,
+        );
       }),
     );
   }
