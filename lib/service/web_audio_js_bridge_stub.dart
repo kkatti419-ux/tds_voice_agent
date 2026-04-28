@@ -22,6 +22,8 @@ void audioBufferSourceConnectToContextDestination(
   dynamic audioContext,
 ) {}
 
+void audioBufferSourceSetPlaybackRate(dynamic src, double rate) {}
+
 void audioBufferSourceStart(dynamic src, double when) {}
 
 void audioBufferSourceStop(dynamic src, double when) {}
