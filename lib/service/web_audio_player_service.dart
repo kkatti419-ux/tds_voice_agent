@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:developer' as developer;
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:universal_html/html.dart' as html;
 
 import 'web_audio_js_bridge_stub.dart'
-    if (dart.library.html) 'web_audio_js_bridge_web.dart' as js_bridge;
+    if (dart.library.html) 'web_audio_js_bridge_web.dart'
+    as js_bridge;
 
 /// Console / DevTools filter: `VoiceAudio`
 const String _kLogName = 'VoiceAudio';
@@ -159,9 +159,8 @@ class AudioPlayerService {
 
   Future<void> play(String url) {
     final playId = ++_nextPlayId;
-    final urlShort =
-        url.length > 80 ? '${url.substring(0, 80)}…' : url;
-    
+    final urlShort = url.length > 80 ? '${url.substring(0, 80)}…' : url;
+
     _voiceAudioLogPrint(
       'play URL ENQUEUE id=$playId url=$urlShort '
       'queueLen=${_queue.length} isPlaying=$_isPlaying stopGen=$_stopGeneration',
@@ -351,10 +350,7 @@ class AudioPlayerService {
         b[3] == 0xa3) {
       return 'audio/webm';
     }
-    if (b.length >= 3 &&
-        b[0] == 0x49 &&
-        b[1] == 0x44 &&
-        b[2] == 0x33) {
+    if (b.length >= 3 && b[0] == 0x49 && b[1] == 0x44 && b[2] == 0x33) {
       return 'audio/mpeg';
     }
     if (b.length >= 2 && b[0] == 0xff && (b[1] & 0xe0) == 0xe0) {
@@ -383,7 +379,9 @@ class AudioPlayerService {
   Future<void> _playWebBytes(Uint8List bytes, {required int playId}) async {
     final sw = Stopwatch()..start();
     final mime = _guessAudioMime(bytes);
-    final head4 = bytes.length >= 4 ? _headerHex(bytes, 4) : _headerHex(bytes, bytes.length);
+    final head4 = bytes.length >= 4
+        ? _headerHex(bytes, 4)
+        : _headerHex(bytes, bytes.length);
     _voiceAudioLog(
       'playBytes pipeline id=$playId len=${bytes.length} mime=$mime header4=$head4',
     );
@@ -394,7 +392,9 @@ class AudioPlayerService {
       );
       return;
     }
-    _voiceAudioLog('playBytes id=$playId decode skipped/failed → blob fallback');
+    _voiceAudioLog(
+      'playBytes id=$playId decode skipped/failed → blob fallback',
+    );
     await _playWebBytesBlob(bytes, playId: playId);
     _voiceAudioLogPrint(
       'playBytes BLOB_PATH_DONE id=$playId elapsedMs=${sw.elapsedMilliseconds}',
@@ -402,7 +402,10 @@ class AudioPlayerService {
   }
 
   /// HTML reference: [AudioContext.decodeAudioData] + [AudioBufferSourceNode] queue.
-  Future<bool> _tryPlayWebBytesDecode(Uint8List bytes, {required int playId}) async {
+  Future<bool> _tryPlayWebBytesDecode(
+    Uint8List bytes, {
+    required int playId,
+  }) async {
     try {
       await ensurePlaybackAudioContext();
       final ctx = _sharedDecodeContext;
@@ -450,7 +453,7 @@ class AudioPlayerService {
         'WebAudio BUFFER_PLAYING id=$playId inLen=${bytes.length} '
         'decodeMs=${decodeSw.elapsedMilliseconds}',
       );
-      await done.future; 
+      await done.future;
       _voiceAudioLog('WebAudio BUFFER_ENDED id=$playId inLen=${bytes.length}');
       return true;
     } catch (e) {
@@ -513,7 +516,9 @@ class AudioPlayerService {
         'blob play START id=$playId len=${bytes.length} mime=$mime',
       );
       await _playElementWithRetry(audio, context: 'blob');
-      _voiceAudioLogPrint('blob play PLAY_RESOLVED id=$playId len=${bytes.length}');
+      _voiceAudioLogPrint(
+        'blob play PLAY_RESOLVED id=$playId len=${bytes.length}',
+      );
     } catch (e) {
       _voiceAudioLogPrint(
         'blob play PLAY_FAILED id=$playId error=$e — if NotAllowedError, tap mic once to unlock audio',
@@ -526,7 +531,9 @@ class AudioPlayerService {
   }
 
   Future<void> _playNative(String url, {required int playId}) async {
-    _voiceAudioLog('native PLAY id=$playId url=${url.length > 64 ? "${url.substring(0, 64)}…" : url}');
+    _voiceAudioLog(
+      'native PLAY id=$playId url=${url.length > 64 ? "${url.substring(0, 64)}…" : url}',
+    );
     final player = _player ??= FlutterSoundPlayer();
     if (!player.isOpen()) {
       await player.openPlayer();

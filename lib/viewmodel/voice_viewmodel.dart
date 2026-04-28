@@ -5,7 +5,6 @@ import 'dart:typed_data';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:tds_voice_agent/service/audio_palyer_service.dart'
     show AudioPlayerService;
 
@@ -19,6 +18,13 @@ import '../voice/listening_idle_policy.dart';
 import '../voice/voice_session_protocol.dart';
 
 class VoiceViewModel extends ChangeNotifier {
+  // 🔥 ADD THESE DEBUG VARIABLES INSIDE CLASS (top)
+
+  int _audioChunkCount = 0;
+  int _totalAudioBytes = 0;
+  int _droppedChunks = 0;
+  int _textEventCount = 0;
+
   void _vmLog(String message, {bool verbose = false}) {
     if (!kDebugMode) return;
     if (verbose && !_verboseLogs) return;
@@ -89,7 +95,8 @@ class VoiceViewModel extends ChangeNotifier {
 
   /// Brief wait after [ai_done] so late binary chunks arrive before [waitUntilPlaybackIdle].
   static const Duration _ttsPostDoneDrain = Duration(milliseconds: 220);
-  static const double _speechThresholdDb = -35.0;
+  // static const double _speechThresholdDb = -35.0;
+  static const double _speechThresholdDb = -45.0;
   static const Duration _bargeInHold = Duration(milliseconds: 280);
 
   bool _isStopping = false;
@@ -140,7 +147,9 @@ class VoiceViewModel extends ChangeNotifier {
   }
 
   void _initConnectivity() {
-    _connectivitySub = _connectivity.onConnectivityChanged.listen(_onConnectivityChanged);
+    _connectivitySub = _connectivity.onConnectivityChanged.listen(
+      _onConnectivityChanged,
+    );
     unawaited(_refreshConnectivityOnce());
   }
 
@@ -343,10 +352,7 @@ class VoiceViewModel extends ChangeNotifier {
       isListening = true;
       notifyListeners();
 
-      _audioWeb.start(
-        onLevel: _onAmplitude,
-        onMicError: _onMicCaptureError,
-      );
+      _audioWeb.start(onLevel: _onAmplitude, onMicError: _onMicCaptureError);
       _scheduleIdleNoSpeechTimer();
       _schedulePresencePromptTimer();
       unawaited(AudioPlayerService.ensurePlaybackAudioContext());
@@ -358,9 +364,7 @@ class VoiceViewModel extends ChangeNotifier {
     isListening = true;
     notifyListeners();
 
-    await _recordService.startRecording(
-      onAmplitude: _onAmplitude,
-    );
+    await _recordService.startRecording(onAmplitude: _onAmplitude);
   }
 
   /// Stop capture only (web). Does not commit an utterance.
@@ -409,7 +413,10 @@ class VoiceViewModel extends ChangeNotifier {
     if (!kIsWeb || !isListening || _awaitingWebTurn) return;
     if (_sessionPhase != VoiceSessionPhase.listening) return;
 
-    _idleNoSpeechTimer = Timer(ListeningIdlePolicy.idleNoSpeech, _onIdleNoSpeechFired);
+    _idleNoSpeechTimer = Timer(
+      ListeningIdlePolicy.idleNoSpeech,
+      _onIdleNoSpeechFired,
+    );
     _vmLog(
       'idle no-speech timer ${ListeningIdlePolicy.idleNoSpeech.inSeconds}s',
       verbose: true,
@@ -435,14 +442,11 @@ class VoiceViewModel extends ChangeNotifier {
 
   void _startContinuePromptTimer() {
     _continuePromptTimer?.cancel();
-    _continuePromptTimer = Timer(
-      ListeningIdlePolicy.continuePromptTimeout,
-      () {
-        if (_sessionPhase != VoiceSessionPhase.awaitingContinueAnswer) return;
-        _vmLog('continue prompt timeout → muteMic', verbose: true);
-        unawaited(muteMic());
-      },
-    );
+    _continuePromptTimer = Timer(ListeningIdlePolicy.continuePromptTimeout, () {
+      if (_sessionPhase != VoiceSessionPhase.awaitingContinueAnswer) return;
+      _vmLog('continue prompt timeout → muteMic', verbose: true);
+      unawaited(muteMic());
+    });
   }
 
   /// UI / voice yes-no: sends [VoiceSessionProtocol.continueIntent].
@@ -453,8 +457,9 @@ class VoiceViewModel extends ChangeNotifier {
 
     _socket.send({
       'type': VoiceSessionProtocol.continueIntent,
-      'intent':
-          continueListening ? VoiceSessionProtocol.intentYes : VoiceSessionProtocol.intentNo,
+      'intent': continueListening
+          ? VoiceSessionProtocol.intentYes
+          : VoiceSessionProtocol.intentNo,
     });
 
     if (continueListening) {
@@ -596,6 +601,13 @@ class VoiceViewModel extends ChangeNotifier {
   /// (same idea as AgniApp always wiring `audioChunks` while connected).
   void _beginWebAssistantTurn() {
     if (!kIsWeb) return;
+
+    // ✅ RESET DEBUG
+    _audioChunkCount = 0;
+    _totalAudioBytes = 0;
+    _droppedChunks = 0;
+    _textEventCount = 0;
+
     _exitAwaitingPolicyForAssistantSignal();
     if (_sessionPhase != VoiceSessionPhase.listening) return;
     if (_awaitingWebTurn) {
@@ -622,7 +634,7 @@ class VoiceViewModel extends ChangeNotifier {
     _webTurnCompleter = Completer<void>();
     notifyListeners();
 
-    unawaited(_runWebTurnCompletion());
+    await _runWebTurnCompletion();
   }
 
   Future<void> _runWebTurnCompletion() async {
@@ -662,7 +674,8 @@ class VoiceViewModel extends ChangeNotifier {
 
   void _notifyTextDebounced() {
     final now = DateTime.now();
-    if (now.difference(_lastTextUiUpdateAt) >= const Duration(milliseconds: 60)) {
+    if (now.difference(_lastTextUiUpdateAt) >=
+        const Duration(milliseconds: 60)) {
       _lastTextUiUpdateAt = now;
       notifyListeners();
     }
@@ -728,6 +741,11 @@ class VoiceViewModel extends ChangeNotifier {
           _beginWebAssistantTurn();
         }
         final delta = (data['text'] ?? '').toString();
+
+        _textEventCount++;
+
+        debugPrint('[VoiceDebug] TEXT #$_textEventCount → "$delta"');
+
         if (_agentMsgIndex != null) {
           messages[_agentMsgIndex!].text += delta;
           _notifyTextDebounced();
@@ -735,6 +753,14 @@ class VoiceViewModel extends ChangeNotifier {
         isProcessing = true;
         _cancelPresencePromptTimer();
         break;
+      // case 'ai_stream':
+      //   final delta = (data['text'] ?? '').toString();
+      //   if (_agentMsgIndex != null) {
+      //     messages[_agentMsgIndex!].text += delta;
+      //     _notifyTextDebounced();
+      //   }
+      //   isProcessing = true;
+      //   break;
       case 'ai_done':
         isProcessing = false;
         _serverStatus = null;
@@ -796,6 +822,9 @@ class VoiceViewModel extends ChangeNotifier {
     _webTurnCompleter = null;
   }
 
+  final List<Uint8List> _audioQueue = [];
+  bool _isPlayingQueue = false;
+
   void _onWebAudio(Uint8List chunk) {
     if (chunk.isEmpty) return;
     if (agniWireLogsEnabled) {
@@ -806,20 +835,23 @@ class VoiceViewModel extends ChangeNotifier {
         'bytes=${chunk.length} total=$_rxChunkBytes',
       );
     }
-    final inGrace = _ttsGraceUntil != null &&
-        DateTime.now().isBefore(_ttsGraceUntil!);
-    final acceptTts =
-        _awaitingWebTurn || inGrace || _expectingAssistantBinary;
+    final inGrace =
+        _ttsGraceUntil != null && DateTime.now().isBefore(_ttsGraceUntil!);
+    final acceptTts = _awaitingWebTurn || inGrace || _expectingAssistantBinary;
     if (kIsWeb && !acceptTts) {
       final now = DateTime.now();
       if (_lastVoiceAudioDropLogAt == null ||
-          now.difference(_lastVoiceAudioDropLogAt!) >= const Duration(milliseconds: 800)) {
+          now.difference(_lastVoiceAudioDropLogAt!) >=
+              const Duration(milliseconds: 800)) {
         _lastVoiceAudioDropLogAt = now;
         debugPrint(
           '[VoiceAudio] dropped binary ${chunk.length}B: not accepting TTS (no turn, grace, or pre-commit expectation)',
         );
       }
-      _vmLog('TTS chunk ignored (no active turn) ${chunk.length}B', verbose: true);
+      _vmLog(
+        'TTS chunk ignored (no active turn) ${chunk.length}B',
+        verbose: true,
+      );
       return;
     }
     if (agentTtsMuted) {
@@ -834,7 +866,12 @@ class VoiceViewModel extends ChangeNotifier {
     unawaited(
       _playerService.playBytes(bytes).catchError((Object e, StackTrace st) {
         debugPrint('[VoiceAudio] playBytes chunk failed: $e');
-        developer.log('playBytes chunk failed', name: 'VoiceVM', error: e, stackTrace: st);
+        developer.log(
+          'playBytes chunk failed',
+          name: 'VoiceVM',
+          error: e,
+          stackTrace: st,
+        );
       }),
     );
   }
@@ -863,12 +900,8 @@ class VoiceViewModel extends ChangeNotifier {
     isAgentSpeaking = false;
     await _playerService.stop();
 
-    messages.add(
-      VoiceMessage(text: 'You (voice)', isUser: true),
-    );
-    messages.add(
-      VoiceMessage(text: '', isUser: false),
-    );
+    messages.add(VoiceMessage(text: 'You (voice)', isUser: true));
+    messages.add(VoiceMessage(text: '', isUser: false));
     final int agentMsgIndex = messages.length - 1;
 
     notifyListeners();
@@ -880,7 +913,8 @@ class VoiceViewModel extends ChangeNotifier {
         onTextDelta: (delta) {
           messages[agentMsgIndex].text += delta;
           final now = DateTime.now();
-          if (now.difference(_lastTextUiUpdateAt) >= const Duration(milliseconds: 60)) {
+          if (now.difference(_lastTextUiUpdateAt) >=
+              const Duration(milliseconds: 60)) {
             _lastTextUiUpdateAt = now;
             notifyListeners();
           }

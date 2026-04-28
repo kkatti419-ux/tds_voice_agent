@@ -12,6 +12,7 @@ class MicAnimation extends StatelessWidget {
     required this.amplitudeDb,
     required this.isAgentSpeaking,
   });
+  
 
   @override
   Widget build(BuildContext context) {

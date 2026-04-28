@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Transparent Globe</title>
+    <style>
+        body {
+            margin: 0;
+            background: transparent;
+            overflow: hidden;
+        }
+
+        #globeViz {
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="globeViz"></div>
+
+    <script src="https://unpkg.com/three"></script>
+    <script src="https://unpkg.com/globe.gl"></script>
+
+    <script>
+        const globe = Globe()(document.getElementById('globeViz'))
+            .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-day.jpg')
+            .backgroundColor('rgba(0,0,0,0)'); // transparent
+
+        // 📍 Your location
+        const myLocation = {
+            lat: 12.924631,
+            lng: 77.600986
+        };
+
+        // 🔵 Dot
+        globe.pointsData([
+            {
+                lat: myLocation.lat,
+                lng: myLocation.lng,
+                size: 0.7,
+                color: '#4CAF50'
+            }
+        ])
+            .pointAltitude(0.03)
+            .pointColor('color');
+
+        // 💫 Blinking pulse
+        globe.ringsData([myLocation])
+            .ringColor(() => '#4CAF50')
+            .ringMaxRadius(6)
+            .ringPropagationSpeed(2)
+            .ringRepeatPeriod(900);
+
+        // 🎮 Controls
+        const controls = globe.controls();
+
+
+        // ✅ Allow manual rotation (drag)
+        controls.enableRotate = true;
+
+        // ❌ Disable zoom completely
+        controls.enableZoom = false;
+
+        // ❌ Disable panning
+        controls.enablePan = false;
+
+        // ❌ Disable auto rotation
+        controls.autoRotate = false;
+
+        // ✅ Only auto rotate
+        controls.autoRotate = true;
+
+
+        controls.autoRotateSpeed = 10;
+
+        // 🎯 Focus location
+        globe.pointOfView(
+            { lat: myLocation.lat, lng: myLocation.lng, altitude: 2 },
+            2000
+        );
+
+    </script>
+
+</body>
+
+</html>
+```

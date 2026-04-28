@@ -70,7 +70,7 @@
 //               /// Status text
 //               Text(
 //                 vm.statusText,
-//                 style: 
+//                 style:
 //                 AppTypography.bodyMedium(color: widget.isDark ? Colors.white60 : Colors.black54).copyWith(
 //                   fontSize: 18,
 //                   fontWeight: FontWeight.w500,
@@ -280,8 +280,7 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
 
   Color get bg => isDark ? AgniColors.black : AgniColors.neutralGrey;
 
-  Color get border =>
-      isDark ? AgniColors.white12 : AgniColors.black12;
+  Color get border => isDark ? AgniColors.white12 : AgniColors.black12;
 
   Widget _offlineStrip() {
     return Padding(
@@ -372,14 +371,14 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
   @override
   Widget build(BuildContext context) {
     return Consumer<VoiceViewModel>(
-      builder: (_, vm, __) {
+      builder: (_, vm, _) {
         return Container(
           width: 320,
           height: 560,
           decoration: BoxDecoration(
-            gradient: 
-            isDark ? 
-            AgniColors.grad.withOpacity(0.3):AgniColors.gradTextLight.withOpacity(0.3),
+            gradient: isDark
+                ? AgniColors.grad.withOpacity(0.3)
+                : AgniColors.gradTextLight.withOpacity(0.3),
             borderRadius: BorderRadius.circular(40),
             border: Border.all(color: border),
             boxShadow: [
@@ -387,7 +386,7 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
                 blurRadius: 60,
                 offset: const Offset(0, 30),
                 color: AgniColors.black.withOpacity(.18),
-              )
+              ),
             ],
           ),
           child: Column(
@@ -402,9 +401,7 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
               Text(
                 vm.statusText,
                 style: AppTypography.bodyMedium(
-                  color: isDark
-                      ? AgniColors.white60
-                      : AgniColors.black54,
+                  color: isDark ? AgniColors.white60 : AgniColors.black54,
                 ),
               ),
 
@@ -438,9 +435,8 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
 
     return AnimatedBuilder(
       animation: _orbController,
-      builder: (_, __) {
-        final pulse =
-            math.sin(_orbController.value * math.pi);
+      builder: (_, _) {
+        final pulse = math.sin(_orbController.value * math.pi);
 
         double scale = 1;
 
@@ -460,9 +456,7 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isDark
-                      ? AgniColors.white12
-                      : AgniColors.black12,
+                  color: isDark ? AgniColors.white12 : AgniColors.black12,
                   width: 1.4,
                 ),
               ),
@@ -487,14 +481,11 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
   /// Pricing badge (clean minimal chip style)
   Widget _pricingCard() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 22,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: border),
-        color: AgniColors.forestLight
+        color: AgniColors.forestLight,
         // isDark ? const Color(0xFF08162A) : const Color(0xFFEEF6F9),
       ),
       child: Column(
@@ -502,26 +493,20 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
           Text(
             "Pricing",
             style: AppTypography.bodyMedium(
-              color: isDark
-                  ? AgniColors.white70
-                  : AgniColors.black54,
+              color: isDark ? AgniColors.white70 : AgniColors.black54,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             "₹2 / min",
             style: AppTypography.displaySmall(
-              color: isDark
-                  ? AgniColors.white
-                  : AgniColors.black,
+              color: isDark ? AgniColors.white : AgniColors.black,
             ).copyWith(fontSize: 22),
           ),
           Text(
             "AI Voice + Automation",
             style: AppTypography.bodyMedium(
-              color: isDark
-                  ? AgniColors.white60
-                  : AgniColors.black45,
+              color: isDark ? AgniColors.white60 : AgniColors.black45,
             ),
           ),
         ],
@@ -593,22 +578,15 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
       onTap: vm.toggleListening,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 34,
-          vertical: 14,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          color: isDark
-              ? AgniColors.white
-              : AgniColors.black,
+          color: isDark ? AgniColors.white : AgniColors.black,
         ),
         child: Text(
           muted ? "Tap to speak" : "Mute mic",
           style: TextStyle(
-            color: isDark
-                ? AgniColors.black
-                : AgniColors.white,
+            color: isDark ? AgniColors.black : AgniColors.white,
             fontWeight: FontWeight.w600,
           ),
         ),

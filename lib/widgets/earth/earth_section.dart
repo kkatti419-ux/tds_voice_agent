@@ -153,6 +153,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
+import 'package:tds_voice_agent/globe/globe_page.dart';
 import 'package:tds_voice_agent/theme/app_typography.dart';
 import 'package:tds_voice_agent/widgets/cta_section.dart';
 import 'package:tds_voice_agent/widgets/earth/earth_global_container.dart';
@@ -204,8 +205,7 @@ class _EarthSectionState extends State<EarthSection>
 
   Color get titleColor => isDark ? AgniColors.white : AgniColors.black;
 
-  Color get subtitleColor =>
-      isDark ? AgniColors.white70 : AgniColors.black54;
+  Color get subtitleColor => isDark ? AgniColors.white70 : AgniColors.black54;
 
   LinearGradient get accentGradient =>
       const LinearGradient(colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)]);
@@ -242,7 +242,7 @@ class _EarthSectionState extends State<EarthSection>
                 const TextSpan(text: "Built in Bangalore.\nDelivered across "),
 
                 WidgetSpan(
-                    child: ShaderMask(
+                  child: ShaderMask(
                     shaderCallback: (b) => accentGradient.createShader(b),
                     child: Text(
                       "the world.",
@@ -272,21 +272,26 @@ class _EarthSectionState extends State<EarthSection>
           ),
 
           const SizedBox(height: 48),
-
-          /// GLOBE
-          AnimatedBuilder(
-            animation: _globeController,
-            builder: (_, __) {
-              return CustomPaint(
-                size: const Size(280, 280),
-                painter: EarthGlobePainter(
-                  t: _globeController.value,
-                  isDark: isDark,
-                ),
-              );
-            },
+          Container(
+            color: Colors.transparent,
+            height: 500,
+            width: 500,
+            child: GlobePage(),
           ),
 
+          /// GLOBE
+          // AnimatedBuilder(
+          //   animation: _globeController,
+          //   builder: (_, _) {
+          //     return CustomPaint(
+          //       size: const Size(280, 280),
+          //       painter: EarthGlobePainter(
+          //         t: _globeController.value,
+          //         isDark: isDark,
+          //       ),
+          //     );
+          //   },
+          // ),
           const SizedBox(height: 42),
 
           /// LANGUAGE PILLS

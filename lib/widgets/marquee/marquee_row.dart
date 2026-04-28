@@ -7,6 +7,7 @@ class MarqueeRow extends StatefulWidget {
   final Color dividerColor;
 
   const MarqueeRow({
+    super.key,
     required this.items,
     required this.progress,
     required this.textStyle,
@@ -19,53 +20,52 @@ class MarqueeRow extends StatefulWidget {
 
 class _MarqueeRowState extends State<MarqueeRow> {
   @override
-Widget build(BuildContext context) {
-  final screenWidth = MediaQuery.of(context).size.width;
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
 
-  final tp = TextPainter(textDirection: TextDirection.ltr);
-  double totalWidth = 0;
+    final tp = TextPainter(textDirection: TextDirection.ltr);
+    double totalWidth = 0;
 
-  // Per segment: horizontal padding 50+50, divider width 3.
-  const double kSegmentPadding = 100;
-  const double kDividerWidth = 3;
+    // Per segment: horizontal padding 50+50, divider width 3.
+    const double kSegmentPadding = 100;
+    const double kDividerWidth = 3;
 
-  for (final item in widget.items) {
-    tp.text = TextSpan(text: item, style: widget.textStyle);
-    tp.layout();
-    totalWidth += tp.width + kSegmentPadding + kDividerWidth;
-  }
+    for (final item in widget.items) {
+      tp.text = TextSpan(text: item, style: widget.textStyle);
+      tp.layout();
+      totalWidth += tp.width + kSegmentPadding + kDividerWidth;
+    }
 
-  // Start from right edge and move fully left
-  final offset = screenWidth - (widget.progress * (screenWidth + totalWidth));
+    // Start from right edge and move fully left
+    final offset = screenWidth - (widget.progress * (screenWidth + totalWidth));
 
-  return ClipRect(
-    child: Transform.translate(
-      offset: Offset(offset, -3),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: widget.items.map((label) {
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 50),
-                  child: Text(label, style: widget.textStyle),
-                ),
-                Container(
-                  height: 30,
-                  width: kDividerWidth,
-                  color: widget.dividerColor,
-                ),
-              ],
-            );
-          }).toList(),
+    return ClipRect(
+      child: Transform.translate(
+        offset: Offset(offset, -3),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: widget.items.map((label) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 50),
+                    child: Text(label, style: widget.textStyle),
+                  ),
+                  Container(
+                    height: 30,
+                    width: kDividerWidth,
+                    color: widget.dividerColor,
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 }
