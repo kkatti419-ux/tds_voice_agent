@@ -15,7 +15,7 @@ class FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark
             ? AgniColors.white.withOpacity(0.05)
@@ -67,6 +67,8 @@ class FeatureCard extends StatelessWidget {
           Text(
             item.description,
             style: TextStyle(fontSize: 14, color: text3Color, height: 1.6),
+            maxLines: 6,
+            overflow: TextOverflow.ellipsis,
           ),
 
           const SizedBox(height: 16),

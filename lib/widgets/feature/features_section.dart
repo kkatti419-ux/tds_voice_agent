@@ -57,8 +57,10 @@ class FeaturesSection extends StatelessWidget {
             spacing: 16,
             runSpacing: 16,
             children: content.features.map((f) {
+              final w = _getItemWidth(width);
               return SizedBox(
-                width: _getItemWidth(width),
+                width: w,
+                height: w,
                 child: FeatureCard(item: f, isDark: isDark),
               );
             }).toList(),
