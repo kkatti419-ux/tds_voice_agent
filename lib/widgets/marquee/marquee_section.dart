@@ -7,7 +7,11 @@ class MarqueeSection extends StatefulWidget {
   final List<String> items;
   final bool isDark;
 
-  const MarqueeSection({super.key, required this.items, required this.isDark});
+  const MarqueeSection({
+    super.key,
+    required this.items,
+    required this.isDark,
+  });
 
   @override
   State<MarqueeSection> createState() => _MarqueeSectionState();
@@ -16,6 +20,8 @@ class MarqueeSection extends StatefulWidget {
 class _MarqueeSectionState extends State<MarqueeSection>
     with SingleTickerProviderStateMixin {
   late AnimationController _marqueeController;
+
+  static const double _pixelsPerSecond = 60;
 
   @override
   void initState() {
@@ -45,8 +51,20 @@ class _MarqueeSectionState extends State<MarqueeSection>
         ? widget.items
         : ['Google', 'Amazon', 'Meta', 'Netflix'];
 
-    // Two copies of the list for seamless looping.
-    final doubled = [...safeItems, ...safeItems];
+    final textStyle =
+        AppTypography.displaySmall(color: textPrimary);
+
+    final cycleWidth =
+        measureMarqueeCycleWidth(context, safeItems, textStyle);
+
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+
+    /// Dynamically repeat items based on screen width
+    final repeats = (viewportWidth / cycleWidth).ceil() + 3;
+
+    final repeatedItems = [
+      for (int i = 0; i < repeats; i++) ...safeItems
+    ];
 
     final borderColor = widget.isDark
         ? AgniColors.oceanBright.withOpacity(0.15)
@@ -56,13 +74,18 @@ class _MarqueeSectionState extends State<MarqueeSection>
         ? const Color(0xFF050F20).withOpacity(0.65)
         : AgniColors.white.withOpacity(0.65);
 
-    final textStyle =
-        AppTypography.displaySmall(color: textPrimary).copyWith();
-
-    final cycleW = measureMarqueeCycleWidth(context, safeItems, textStyle);
-
-    /// displaySmall line height ~44; slack for dividers.
     const double marqueeBandHeight = 62;
+
+    /// Sync animation speed with actual width
+    final durationMs =
+        (cycleWidth / _pixelsPerSecond * 1000).round();
+
+    _marqueeController.duration =
+        Duration(milliseconds: durationMs.clamp(8000, 120000));
+
+    if (!_marqueeController.isAnimating) {
+      _marqueeController.repeat();
+    }
 
     return Container(
       width: double.infinity,
@@ -89,14 +112,14 @@ class _MarqueeSectionState extends State<MarqueeSection>
 
           ShaderMask(
             shaderCallback: (rect) {
-              return LinearGradient(
+              return const LinearGradient(
                 colors: [
-                  AgniColors.transparent,
-                  AgniColors.black,
-                  AgniColors.black,
-                  AgniColors.transparent,
+                  Colors.transparent,
+                  Colors.black,
+                  Colors.black,
+                  Colors.transparent,
                 ],
-                stops: const [0.0, 0.08, 0.92, 1.0],
+                stops: [0.0, 0.08, 0.92, 1.0],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ).createShader(rect);
@@ -109,12 +132,12 @@ class _MarqueeSectionState extends State<MarqueeSection>
                 animation: _marqueeController,
                 builder: (_, __) {
                   return MarqueeRow(
-                    items: doubled,
+                    items: repeatedItems,
                     cycleLength: safeItems.length,
-                    cycleWidth: cycleW,
                     progress: _marqueeController.value,
                     textStyle: textStyle,
                     dividerColor: borderColor,
+                    cycleWidth: cycleWidth,
                   );
                 },
               ),
