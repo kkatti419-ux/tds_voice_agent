@@ -14,7 +14,7 @@ import 'web_audio_js_bridge_stub.dart'
 const String _kLogName = 'VoiceAudio';
 
 /// Web [HTMLMediaElement.playbackRate] for TTS / URL playback (1.0 = normal).
-const double _kWebPlaybackRate = 1.2;
+const double _kWebPlaybackRate = 1.5;
 
 void _voiceAudioLog(String message) {
   debugPrint('[$_kLogName] $message');
@@ -75,12 +75,8 @@ class AudioPlayerService {
     final src = _activeBufferSource;
     _activeBufferSource = null;
     if (src == null) return;
-    try {
-      src.stop(0);
-    } catch (_) {}
-    try {
-      src.disconnect();
-    } catch (_) {}
+    js_bridge.audioBufferSourceStop(src, 0);
+    js_bridge.audioBufferSourceDisconnect(src);
   }
 
   /// [HTMLMediaElement.play] can reject with NotAllowedError until a user gesture;
@@ -430,9 +426,13 @@ class AudioPlayerService {
       final done = Completer<void>();
       _activePlaybackCompleter = done;
 
-      final src = ctx.createBufferSource() as dynamic;
-      src.buffer = audioBuf;
-      src.connect(ctx.destination);
+      final src = js_bridge.audioContextCreateBufferSource(ctx);
+      if (src == null) {
+        _voiceAudioLog('decode id=$playId: createBufferSource returned null');
+        return false;
+      }
+      js_bridge.audioBufferSourceSetBuffer(src, audioBuf as Object?);
+      js_bridge.audioBufferSourceConnectToContextDestination(src, ctx);
       _activeBufferSource = src;
 
       js_bridge.setBufferSourceOnEnded(src, () {
@@ -445,7 +445,7 @@ class AudioPlayerService {
         }
       });
 
-      src.start(0);
+      js_bridge.audioBufferSourceStart(src, 0);
       _voiceAudioLogPrint(
         'WebAudio BUFFER_PLAYING id=$playId inLen=${bytes.length} '
         'decodeMs=${decodeSw.elapsedMilliseconds}',

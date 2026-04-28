@@ -64,6 +64,43 @@ dynamic createAudioContextOrNull() {
   }
 }
 
+/// Raw JS `AudioContext.createBufferSource()` call.
+dynamic audioContextCreateBufferSource(dynamic audioContext) {
+  return js_util.callMethod<Object?>(
+    audioContext,
+    'createBufferSource',
+    const <Object>[],
+  );
+}
+
+void audioBufferSourceSetBuffer(dynamic src, Object? audioBuffer) {
+  js_util.setProperty(src, 'buffer', audioBuffer);
+}
+
+void audioBufferSourceConnectToContextDestination(
+  dynamic src,
+  dynamic audioContext,
+) {
+  final destination = js_util.getProperty(audioContext, 'destination');
+  js_util.callMethod<Object?>(src, 'connect', <Object?>[destination]);
+}
+
+void audioBufferSourceStart(dynamic src, double when) {
+  js_util.callMethod<Object?>(src, 'start', <Object?>[when]);
+}
+
+void audioBufferSourceStop(dynamic src, double when) {
+  try {
+    js_util.callMethod<Object?>(src, 'stop', <Object?>[when]);
+  } catch (_) {}
+}
+
+void audioBufferSourceDisconnect(dynamic src) {
+  try {
+    js_util.callMethod<Object?>(src, 'disconnect', const <Object>[]);
+  } catch (_) {}
+}
+
 /// Calls `HTMLMediaElement.play()` through JS and awaits a real Promise only.
 /// Dart's typed [AudioElement.play] can throw [JSNoSuchMethodError] when the
 /// engine returns `undefined` or a non-standard thenable (common on first play).

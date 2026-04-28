@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
+import 'package:tds_voice_agent/core/contact_email.dart';
 import 'package:tds_voice_agent/model/agni_content.dart';
-import 'package:tds_voice_agent/routing/app_routes.dart';
+import 'package:tds_voice_agent/viewmodel/voice_viewmodel.dart';
 import 'package:tds_voice_agent/widgets/background_painters.dart';
+import 'package:tds_voice_agent/widgets/demo_video/demo_video_player.dart';
 import 'package:tds_voice_agent/widgets/chatbot%20card/phone_mockup_widget.dart';
 
 class HeroSection extends StatefulWidget {
@@ -21,13 +24,7 @@ class HeroSection extends StatefulWidget {
 class _HeroSectionState extends State<HeroSection>
     with TickerProviderStateMixin {
   late AnimationController _globeController;
-  late AnimationController _waveController;
   late AnimationController _floatController;
-
-  int _langIndex = 0;
-  double _langOpacity = 1.0;
-  double _langOffset = 0.0;
-  Timer? _langTimer;
 
   bool get isDark => widget.isDark;
   List<String> get _langs => widget.content.heroLangs;
@@ -43,48 +40,46 @@ class _HeroSectionState extends State<HeroSection>
     super.initState();
     _globeController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10),
+      duration: const Duration(seconds: 8),
     )..repeat();
-
-    _waveController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
 
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
-
-    if (_langs.isNotEmpty) {
-      _langTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-        _cycleLang();
-      });
-    }
-  }
-
-  void _cycleLang() async {
-    if (!mounted) return;
-    setState(() {
-      _langOpacity = 0.0;
-      _langOffset = 8.0;
-    });
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (!mounted) return;
-    setState(() {
-      _langIndex = (_langIndex + 1) % _langs.length;
-      _langOpacity = 1.0;
-      _langOffset = 0.0;
-    });
   }
 
   @override
   void dispose() {
     _globeController.dispose();
-    _waveController.dispose();
     _floatController.dispose();
-    _langTimer?.cancel();
     super.dispose();
+  }
+
+  void _openContactForm() {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (_) => _ContactFormDialog(isDark: isDark),
+    );
+  }
+
+  void _openDemoVideo() {
+    context.read<VoiceViewModel>().stopAgentForDemoVideo();
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.8),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: const DemoVideoPlayer(),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -94,117 +89,50 @@ class _HeroSectionState extends State<HeroSection>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Background globe animation
+          // Background globe (ignore pointers so scroll/gestures pass through)
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _globeController,
-              builder: (_, __) => CustomPaint(
-                painter: GlobeBgPainter(
-                  isDark: isDark,
-                  t: _globeController.value,
+              builder: (_, __) => IgnorePointer(
+                child: CustomPaint(
+                  painter: GlobeBgPainter(
+                    isDark: isDark,
+                    t: _globeController.value,
+                  ),
                 ),
               ),
             ),
           ),
 
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
+            padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final isMobile = constraints.maxWidth < 900;
-
-                if (isMobile) {
-                  return Column(
-                    children: [
-                      buildBadge(),
-                      const SizedBox(height: 16),
-                      _buildLangTicker(),
-                      const SizedBox(height: 24),
-                      _buildHeroTitle(isMobile: true),
-                      const SizedBox(height: 24),
-                      _buildDescription(),
-                      const SizedBox(height: 32),
-                      _buildButtons(isMobile: true),
-                      const SizedBox(height: 60),
-                      // _buildPhoneMockup(),
-                      VoicePhoneWidget(
-                        isDark: isDark,
-                        // languages: ["English", "Hindi", "Tamil"],
-                        // floatingCards: [
-                        //   FloatingCardData(
-                        //     "100K+",
-                        //     "Daily calls",
-                        //     0.0,
-                        //   ), // stat, label, delayFactor
-                        //   FloatingCardData("\$0.03", "Cost/min", 0.0),
-                        // ],
-                      ),
-                      // PhoneMockupWidget(
-                      //   isDark: true,
-                      //   languages: ["English", "Hindi", "Tamil"],
-                      //   floatingCards: [
-                      //     FloatingCardData(
-                      //       "100K+",
-                      //       "Daily calls",
-                      //       0.0,
-                      //     ), // stat, label, delayFactor
-                      //     FloatingCardData("\$0.03", "Cost/min", 0.0),
-                      //   ],
-                      // ),
-                    ],
-                  );
-                } else {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            buildBadge(),
-                            const SizedBox(height: 16),
-                            _buildLangTicker(alignLeft: true),
-                            const SizedBox(height: 24),
-                            _buildHeroTitle(isMobile: false),
-                            const SizedBox(height: 24),
-                            _buildDescription(alignLeft: true),
-                            const SizedBox(height: 32),
-                            _buildButtons(isMobile: false),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 48),
-                      // Mockup container
-                      SizedBox(
-                        width: 320,
-                        child: VoicePhoneWidget(
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 720),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        buildBadge(),
+                        const SizedBox(height: 32),
+                        _buildLangTicker(),
+                        const SizedBox(height: 30),
+                        _buildHeroTitle(isMobile: isMobile),
+                        const SizedBox(height: 22),
+                        _buildDescription(),
+                        const SizedBox(height: 24),
+                        _buildButtons(isMobile: isMobile),
+                        const SizedBox(height: 32),
+                        VoicePhoneWidget(
                           isDark: isDark,
-                          // languages: ["English", "Hindi", "Tamil"],
-                          // floatingCards: [
-                          //   FloatingCardData(
-                          //     "100K+",
-                          //     "Daily calls",
-                          //     0.0,
-                          //   ), // stat, label, delayFactor
-                          //   FloatingCardData("\$0.03", "Cost/min", 0.0),
-                          // ],
+                          heroLangs: _langs,
                         ),
-                        // PhoneMockupWidget(
-                        //   isDark: true,
-                        //   languages: ["English", "Hindi", "Tamil"],
-                        //   floatingCards: [
-                        //     FloatingCardData(
-                        //       "100K+",
-                        //       "Daily calls",
-                        //       0.0,
-                        //     ), // stat, label, delayFactor
-                        //     FloatingCardData("\$0.03", "Cost/min", 0.0),
-                        //   ],
-                        // ),
-                      ),
-                    ],
-                  );
-                }
+                      ],
+                    ),
+                  ),
+                );
               },
             ),
           ),
@@ -213,89 +141,38 @@ class _HeroSectionState extends State<HeroSection>
     );
   }
 
-  Widget _buildDescription({bool alignLeft = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AgniColors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: RichText(
-        textAlign: alignLeft ? TextAlign.left : TextAlign.center,
-        text: TextSpan(
-          style: TextStyle(fontSize: 16, height: 1.7, color: text3Color),
-          children: [
-            const TextSpan(text: 'We build '),
-
-            /// 🔥 Highlight
-            WidgetSpan(
-              child: ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)],
-                ).createShader(bounds),
-                child: const Text(
-                  'agentic AI',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AgniColors.white,
-                  ),
-                ),
-              ),
-            ),
-
-            const TextSpan(text: ' and automation that transforms '),
-
-            /// 🔥 Industries highlight
-            WidgetSpan(
-              child: ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Color(0xFF4EB3D3), Color(0xFF74C69D)],
-                ).createShader(bounds),
-                child: const Text(
-                  'Healthcare, Banking, Insurance, Telecom, and Retail',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AgniColors.white,
-                  ),
-                ),
-              ),
-            ),
-
-            const TextSpan(text: ' — with measurable ROI from day one.'),
-          ],
-        ),
+  Widget _buildDescription() {
+    return Text(
+      widget.content.heroDescription,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 18,
+        color: text3Color,
+        height: 1.75,
+        fontWeight: FontWeight.w400,
       ),
     );
   }
-  // Widget _buildDescription({bool alignLeft = false}) {
-  //   return Text(
-  //     'We build agentic AI and automation that transforms Healthcare, Banking, Insurance, Telecom, and Retail — with measurable ROI from day one.',
-  //     textAlign: alignLeft ? TextAlign.left : TextAlign.center,
-  //     style: TextStyle(fontSize: 16, color: text3Color, height: 1.6),
-  //   );
-  // }
 
   Widget _buildButtons({bool isMobile = false}) {
-    void openExpert() =>
-        Navigator.of(context).pushNamed(AppRoutes.talkToExpert);
-    void openDemo() =>
-        Navigator.of(context).pushNamed(AppRoutes.seeHowItWorks);
+    void openExpert() => _openContactForm();
+    void openDemo() => _openDemoVideo();
 
     if (isMobile) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _gradientButton('Talk to an expert', onTap: openExpert),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           _ghostButton('See how it works', onTap: openDemo),
         ],
       );
     }
     return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _gradientButton('Talk to an expert', onTap: openExpert),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         _ghostButton('See how it works', onTap: openDemo),
       ],
     );
@@ -307,56 +184,37 @@ class _HeroSectionState extends State<HeroSection>
 
   Widget buildBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(50),
-
-        /// 🌫️ Glass effect
         color: isDark
-            ? const Color(0xFF0E2D4A).withOpacity(0.35)
-            : AgniColors.white.withOpacity(0.6),
-
-        /// 🧊 Border
+            ? AgniColors.oceanBright.withOpacity(0.08)
+            : AgniColors.white.withOpacity(0.70),
+        borderRadius: BorderRadius.circular(100),
         border: Border.all(
           color: isDark
               ? AgniColors.oceanBright.withOpacity(0.25)
-              : AgniColors.oceanMid.withOpacity(0.2),
+              : AgniColors.oceanMid.withOpacity(0.16),
         ),
-
-        /// ✨ Glow
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? AgniColors.oceanBright.withOpacity(0.15)
-                : AgniColors.oceanMid.withOpacity(0.1),
-            blurRadius: 16,
-            spreadRadius: 1,
-          ),
-        ],
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: AgniColors.oceanBright.withOpacity(0.10),
+                  blurRadius: 20,
+                ),
+              ]
+            : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          /// 🔵 Animated Pulse Dot
           _buildPulseDot(),
-
-          const SizedBox(width: 10),
-
-          /// 🌈 Gradient Text
-          ShaderMask(
-            shaderCallback: (bounds) => LinearGradient(
-              colors: isDark
-                  ? [AgniColors.oceanBright, AgniColors.forestBright]
-                  : [AgniColors.oceanMid, AgniColors.forestMid],
-            ).createShader(bounds),
-            child: const Text(
-              'Founded in 2020 · Bangalore HQ',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AgniColors.white, // required for shader
-                letterSpacing: 0.3,
-              ),
+          const SizedBox(width: 8),
+          Text(
+            widget.content.heroBadge,
+            style: TextStyle(
+              fontSize: 12.8,
+              fontWeight: FontWeight.w500,
+              color: isDark ? AgniColors.oceanBright : AgniColors.oceanMid,
             ),
           ),
         ],
@@ -399,12 +257,12 @@ class _HeroSectionState extends State<HeroSection>
     );
   }
 
-  Widget _buildLangTicker({bool alignLeft = false}) {
+  Widget _buildLangTicker() {
     final tags = widget.content.tickerTags;
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      alignment: alignLeft ? WrapAlignment.start : WrapAlignment.center,
+      alignment: WrapAlignment.center,
       children: tags.asMap().entries.map((e) {
         return AnimatedBuilder(
           animation: _floatController,
@@ -447,210 +305,55 @@ class _HeroSectionState extends State<HeroSection>
   }
 
   Widget _buildHeroTitle({required bool isMobile}) {
+    final size = isMobile ? 48.0 : 72.0;
+    final c = widget.content;
     return Column(
-      crossAxisAlignment: isMobile
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          'Agentic AI + Automation',
-          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          c.heroTitleLine1,
+          textAlign: TextAlign.center,
           style: GoogleFonts.playfairDisplay(
-            fontSize: isMobile ? 48 : 64,
+            fontSize: size,
             fontWeight: FontWeight.w900,
             height: 1.06,
             letterSpacing: -2.16,
             color: textColor,
           ),
         ),
-        Wrap(
-          alignment: isMobile ? WrapAlignment.center : WrapAlignment.start,
-          children: [
-            Text(
-              'for modern ',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: isMobile ? 48 : 64,
-                fontWeight: FontWeight.w900,
-                height: 1.06,
-                letterSpacing: -2.16,
-                color: textColor,
-              ),
-            ),
-            ShaderMask(
-              shaderCallback: (bounds) => gradText.createShader(bounds),
-              child: Text(
-                'enterprises.',
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                c.heroTitlePrefix,
                 style: GoogleFonts.playfairDisplay(
-                  fontSize: isMobile ? 48 : 64,
+                  fontSize: size,
                   fontWeight: FontWeight.w900,
-                  fontStyle: FontStyle.italic,
                   height: 1.06,
                   letterSpacing: -2.16,
-                  color: AgniColors.white,
+                  color: textColor,
                 ),
               ),
-            ),
-          ],
+              ShaderMask(
+                shaderCallback: (bounds) => gradText.createShader(bounds),
+                child: Text(
+                  c.heroTitleAccent,
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: size,
+                    fontWeight: FontWeight.w900,
+                    fontStyle: FontStyle.italic,
+                    height: 1.06,
+                    letterSpacing: -2.16,
+                    color: AgniColors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildWaveform() {
-    final heights = [20.0, 36.0, 48.0, 28.0, 40.0, 24.0, 44.0, 32.0, 20.0];
-    final delays = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
-    return AnimatedBuilder(
-      animation: _waveController,
-      builder: (_, __) => SizedBox(
-        height: 48,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: List.generate(heights.length, (i) {
-            final phase = (_waveController.value + delays[i]) % 1.0;
-            final scale = 0.3 + math.sin(phase * math.pi) * 0.7;
-            return Container(
-              width: 4,
-              height: heights[i] * scale,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                gradient: AgniColors.grad,
-                borderRadius: BorderRadius.circular(100),
-                boxShadow: isDark
-                    ? [
-                        BoxShadow(
-                          color: AgniColors.oceanBright.withOpacity(0.40),
-                          blurRadius: 8,
-                        ),
-                      ]
-                    : null,
-              ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTalkingAvatar() {
-    return AnimatedBuilder(
-      animation: _waveController,
-      builder: (_, __) {
-        final pulse = 0.08 + (_waveController.value * 0.12);
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 86,
-              height: 86,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AgniColors.grad,
-                boxShadow: [
-                  BoxShadow(
-                    color: AgniColors.oceanBright.withOpacity(
-                      isDark ? 0.30 : 0.24,
-                    ),
-                    blurRadius: 18,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDark
-                    ? const Color(0xFF0E2D4A).withOpacity(0.65)
-                    : AgniColors.white.withOpacity(0.82),
-                border: Border.all(
-                  color: isDark
-                      ? AgniColors.oceanBright.withOpacity(0.30)
-                      : AgniColors.oceanMid.withOpacity(0.22),
-                  width: 1.4,
-                ),
-              ),
-              child: Icon(
-                Icons.person,
-                color: isDark ? AgniColors.oceanBright : AgniColors.oceanMid,
-                size: 28,
-              ),
-            ),
-            Container(
-              width: 86 + pulse * 80,
-              height: 86 + pulse * 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AgniColors.oceanBright.withOpacity(0.10),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildFloatingCard(String stat, String label, double delayFactor) {
-    return AnimatedBuilder(
-      animation: _floatController,
-      builder: (_, __) {
-        final t =
-            ((_floatController.value * (1 / 4.0)) + delayFactor / 4.0) % 1.0;
-        final offset = math.sin(t * math.pi * 2) * 7;
-        return Transform.translate(
-          offset: Offset(0, offset),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF08162A).withOpacity(0.88)
-                  : AgniColors.white.withOpacity(0.88),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isDark
-                    ? AgniColors.oceanBright.withOpacity(0.25)
-                    : AgniColors.white.withOpacity(0.95),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AgniColors.oceanBright.withOpacity(
-                    isDark ? 0.10 : 0.08,
-                  ),
-                  blurRadius: 48,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ShaderMask(
-                  shaderCallback: (bounds) => gradText.createShader(bounds),
-                  child: Text(
-                    stat,
-                    style: const TextStyle(
-                      fontSize: 17.6,
-                      fontWeight: FontWeight.w700,
-                      color: AgniColors.white,
-                    ),
-                  ),
-                ),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12.8,
-                    color: text2Color,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -728,6 +431,284 @@ class _HeroSectionState extends State<HeroSection>
         onTap: onTap,
         borderRadius: BorderRadius.circular(100),
         child: child,
+      ),
+    );
+  }
+}
+
+class _ContactFormDialog extends StatefulWidget {
+  final bool isDark;
+
+  const _ContactFormDialog({required this.isDark});
+
+  @override
+  State<_ContactFormDialog> createState() => _ContactFormDialogState();
+}
+
+class _ContactFormDialogState extends State<_ContactFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
+  final phoneController = TextEditingController();
+  final emailController = TextEditingController();
+  final descController = TextEditingController();
+  bool submitted = false;
+
+  bool get _dialogIsLight => widget.isDark;
+  Color get _dialogBg => _dialogIsLight
+      ? const Color(0xFFF0F7FF)
+      : const Color(0xFF08162A).withOpacity(0.95);
+  Color get _titleColor =>
+      _dialogIsLight ? const Color(0xFF071828) : Colors.white;
+  Color get _subtitleColor =>
+      _dialogIsLight ? const Color(0xFF3A6A8A) : Colors.white60;
+  Color get _inputTextColor =>
+      _dialogIsLight ? const Color(0xFF071828) : Colors.white;
+  Color get _hintColor =>
+      _dialogIsLight ? const Color(0xFF7A9AB0) : Colors.white38;
+  Color get _fieldFill =>
+      _dialogIsLight ? const Color(0xFFE4F0F8) : Colors.white.withOpacity(0.05);
+  Color get _enabledBorderColor =>
+      _dialogIsLight ? const Color(0xFFB4D7EB) : Colors.white.withOpacity(0.10);
+  Color get _dialogBorderColor => _dialogIsLight
+      ? const Color(0xFF4EB3D3).withOpacity(0.20)
+      : const Color(0xFF4EB3D3).withOpacity(0.25);
+  Color get _dialogShadowColor => const Color(0xFF4EB3D3).withOpacity(0.25);
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    phoneController.dispose();
+    emailController.dispose();
+    descController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitContactForm() async {
+    if (!_formKey.currentState!.validate()) return;
+    final didSend = await composeContactEmail(
+      recipientEmail: emailController.text.trim(),
+      name: nameController.text.trim(),
+      phone: phoneController.text.trim(),
+      description: descController.text.trim(),
+    );
+
+    if (!mounted) return;
+    if (didSend) {
+      setState(() => submitted = true);
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Unable to send email right now. Please try again.'),
+      ),
+    );
+  }
+
+  String? _validateName(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Full name is required';
+    final parts = value.trim().split(RegExp(r'\s+'));
+    if (parts.length < 2) return 'Enter full name (first & last)';
+    if (!RegExp(r'^[a-zA-Z ]+$').hasMatch(value.trim())) {
+      return 'Only letters allowed';
+    }
+    return null;
+  }
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Phone number is required';
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value.trim())) {
+      return 'Enter valid 10-digit number';
+    }
+    return null;
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Email is required';
+    if (!RegExp(r'^[\w\-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
+      return 'Enter valid email';
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 420,
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: _dialogBg,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _dialogBorderColor),
+          boxShadow: [
+            BoxShadow(
+              color: _dialogShadowColor,
+              blurRadius: 40,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: submitted ? _successView() : _formView(),
+      ),
+    );
+  }
+
+  Widget _successView() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.check_circle, color: Color(0xFF52B788), size: 60),
+        const SizedBox(height: 16),
+        Text(
+          "You're all set!",
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: _titleColor,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Someone will get in touch with you shortly.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: _subtitleColor, height: 1.5),
+        ),
+        const SizedBox(height: 24),
+        _gradientButton('Close', () async {
+          Navigator.of(context).pop();
+        }),
+      ],
+    );
+  }
+
+  Widget _formView() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Talk to an Expert',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: _titleColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "We'll reach out within 24 hours",
+            style: TextStyle(color: _subtitleColor),
+          ),
+          const SizedBox(height: 24),
+          _inputField('Full Name', nameController, validator: _validateName),
+          const SizedBox(height: 14),
+          _inputField(
+            'Phone Number',
+            phoneController,
+            keyboard: TextInputType.phone,
+            validator: _validatePhone,
+          ),
+          const SizedBox(height: 14),
+          _inputField(
+            'Email Address',
+            emailController,
+            keyboard: TextInputType.emailAddress,
+            validator: _validateEmail,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: descController,
+            maxLines: 3,
+            style: TextStyle(color: _inputTextColor),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Description is required';
+              }
+              return null;
+            },
+            decoration: _decoration('Description'),
+          ),
+          const SizedBox(height: 16),
+          _gradientButton('Submit', _submitContactForm),
+        ],
+      ),
+    );
+  }
+
+  Widget _inputField(
+    String label,
+    TextEditingController controller, {
+    TextInputType keyboard = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboard,
+      style: TextStyle(color: _inputTextColor),
+      validator: validator,
+      decoration: _decoration(label),
+    );
+  }
+
+  InputDecoration _decoration(String hintText) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(color: _hintColor),
+      filled: true,
+      fillColor: _fieldFill,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: _enabledBorderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: _enabledBorderColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFF4EB3D3), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+    );
+  }
+
+  Widget _gradientButton(String text, Future<void> Function() onTap) {
+    return GestureDetector(
+      onTap: () => unawaited(onTap()),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF4EB3D3), Color(0xFF52B788)],
+          ),
+          borderRadius: BorderRadius.circular(100),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF4EB3D3).withOpacity(0.4),
+              blurRadius: 20,
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ),
     );
   }

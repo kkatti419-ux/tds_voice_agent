@@ -5,12 +5,12 @@ import 'package:tds_voice_agent/model/agni_content.dart';
 import 'package:tds_voice_agent/widgets/feature/feature_card.dart';
 
 class FeaturesSection extends StatelessWidget {
-  final List<FeatureItem> features;
+  final AgniContent content;
   final bool isDark;
 
   const FeaturesSection({
     super.key,
-    required this.features,
+    required this.content,
     required this.isDark,
   });
 
@@ -26,24 +26,37 @@ class FeaturesSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTag(),
+          Text(
+            content.featuresSectionTag,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.5,
+            ),
+          ),
           const SizedBox(height: 18),
 
-          _sectionTitle(),
+          Text(
+            content.featuresSectionTitle,
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+            ),
+          ),
           const SizedBox(height: 16),
 
           Text(
-            'Built from day one for the languages that matter most — not as an afterthought.',
+            content.featuresSectionBlurb,
             style: TextStyle(fontSize: 16, color: text3Color, height: 1.6),
           ),
 
           const SizedBox(height: 40),
 
-          /// 🔥 Responsive Grid
           Wrap(
             spacing: 16,
             runSpacing: 16,
-            children: features.map((f) {
+            children: content.features.map((f) {
               return SizedBox(
                 width: _getItemWidth(width),
                 child: FeatureCard(item: f, isDark: isDark),
@@ -56,29 +69,8 @@ class FeaturesSection extends StatelessWidget {
   }
 
   double _getItemWidth(double width) {
-    if (width > 900) return (width - 104) / 3; // desktop
-    if (width > 600) return (width - 64) / 2; // tablet
-    return width; // mobile
-  }
-
-  Widget _sectionTag() {
-    return const Text(
-      "Why Technodysis",
-      style: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 1.5,
-      ),
-    );
-  }
-
-  Widget _sectionTitle() {
-    return Text(
-      "Not translated. Native.",
-      style: GoogleFonts.playfairDisplay(
-        fontSize: 28,
-        fontWeight: FontWeight.w800,
-      ),
-    );
+    if (width > 900) return (width - 104) / 3;
+    if (width > 600) return (width - 64) / 2;
+    return width;
   }
 }

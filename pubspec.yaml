@@ -59,6 +59,7 @@ dependencies:
   audio_session: ^0.1.16
   speech_to_text: ^7.3.0
   flutter_tts: ^4.2.5
+  video_player: ^2.11.1
 
 dev_dependencies:
   flutter_test:

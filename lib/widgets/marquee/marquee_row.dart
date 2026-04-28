@@ -1,71 +1,103 @@
 import 'package:flutter/material.dart';
 
-class MarqueeRow extends StatefulWidget {
+/// Horizontal padding per label (`symmetric(50)` → 100 total per segment).
+const double kMarqueeSegmentPadding = 100;
+const double kMarqueeDividerWidth = 3;
+
+/// Width of one repeating segment [segment] (padding + text + dividers per item).
+/// Uses [context] so widths match scaled [Text] (accessibility text scale).
+double measureMarqueeCycleWidth(
+  BuildContext context,
+  List<String> segment,
+  TextStyle textStyle,
+) {
+  if (segment.isEmpty) return 1;
+
+  final tp = TextPainter(
+    textDirection: TextDirection.ltr,
+    textScaler: MediaQuery.textScalerOf(context),
+  );
+  double total = 0;
+  for (final item in segment) {
+    tp.text = TextSpan(text: item, style: textStyle);
+    tp.layout();
+    total += tp.width + kMarqueeSegmentPadding + kMarqueeDividerWidth;
+  }
+  return total;
+}
+
+/// Horizontal marquee: [items] must be an integer number of [cycleLength] copies
+/// of the same pattern (for seamless loop). Offset moves by one pattern width per period.
+///
+/// Pass [cycleWidth] from the parent (same value used for duration math) so translation
+/// stays aligned with the measured strip width.
+class MarqueeRow extends StatelessWidget {
   final List<String> items;
+  /// Length of one repeating unit (e.g. original brand list length).
+  final int cycleLength;
   final double progress;
   final TextStyle textStyle;
   final Color dividerColor;
 
+  /// Pixel width of one full cycle; falls back to measuring if omitted.
+  final double? cycleWidth;
+
   const MarqueeRow({
+    super.key,
     required this.items,
+    required this.cycleLength,
     required this.progress,
     required this.textStyle,
     required this.dividerColor,
+    this.cycleWidth,
   });
 
   @override
-  State<MarqueeRow> createState() => _MarqueeRowState();
-}
+  Widget build(BuildContext context) {
+    assert(
+      cycleLength > 0 && items.length % cycleLength == 0,
+      'items length must be a multiple of cycleLength',
+    );
 
-class _MarqueeRowState extends State<MarqueeRow> {
-  @override
-Widget build(BuildContext context) {
-  final screenWidth = MediaQuery.of(context).size.width;
+    final cycleSegment = items.sublist(0, cycleLength);
+    final cw = cycleWidth ??
+        measureMarqueeCycleWidth(context, cycleSegment, textStyle);
+    final offset = -progress * cw;
 
-  final tp = TextPainter(textDirection: TextDirection.ltr);
-  double totalWidth = 0;
-
-  // Per segment: horizontal padding 50+50, divider width 3.
-  const double kSegmentPadding = 100;
-  const double kDividerWidth = 3;
-
-  for (final item in widget.items) {
-    tp.text = TextSpan(text: item, style: widget.textStyle);
-    tp.layout();
-    totalWidth += tp.width + kSegmentPadding + kDividerWidth;
-  }
-
-  // Start from right edge and move fully left
-  final offset = screenWidth - (widget.progress * (screenWidth + totalWidth));
-
-  return ClipRect(
-    child: Transform.translate(
-      offset: Offset(offset, -3),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: widget.items.map((label) {
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 50),
-                  child: Text(label, style: widget.textStyle),
-                ),
-                Container(
-                  height: 30,
-                  width: kDividerWidth,
-                  color: widget.dividerColor,
-                ),
-              ],
-            );
-          }).toList(),
+    return ClipRect(
+      child: Transform.translate(
+        offset: Offset(offset, 0),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          clipBehavior: Clip.hardEdge,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: items.map((label) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 50),
+                    child: Text(
+                      label,
+                      style: textStyle,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                  Container(
+                    height: 30,
+                    width: kMarqueeDividerWidth,
+                    color: dividerColor,
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 }

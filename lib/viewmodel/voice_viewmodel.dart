@@ -299,6 +299,21 @@ class VoiceViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Stops assistant TTS/playback before overlays (e.g. demo video). Does not change mic state.
+  void stopAgentForDemoVideo() {
+    _vmLog('stopAgentForDemoVideo');
+    if (kIsWeb) {
+      _socket.interrupt();
+      _cancelWebTurnForInterrupt('demo_video');
+      isAgentSpeaking = false;
+      notifyListeners();
+      return;
+    }
+    unawaited(_playerService.stop());
+    isAgentSpeaking = false;
+    notifyListeners();
+  }
+
   /// Mic button: mute capture if live, else unmute and start capture.
   Future<void> toggleListening() async {
     if (kIsWeb) {

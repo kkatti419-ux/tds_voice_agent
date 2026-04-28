@@ -24,7 +24,7 @@ class _MarqueeSectionState extends State<MarqueeSection>
     _marqueeController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 25),
-    )..repeat(); // infinite smooth loop
+    )..repeat();
   }
 
   @override
@@ -33,17 +33,19 @@ class _MarqueeSectionState extends State<MarqueeSection>
     super.dispose();
   }
 
-  Color get textPrimary => widget.isDark ? AgniColors.white70 : AgniColors.black87;
+  Color get textPrimary =>
+      widget.isDark ? AgniColors.white70 : AgniColors.black87;
 
-  Color get textSecondary => widget.isDark ? AgniColors.white54 : AgniColors.black54;
+  Color get textSecondary =>
+      widget.isDark ? AgniColors.white54 : AgniColors.black54;
 
   @override
   Widget build(BuildContext context) {
     final safeItems = widget.items.isNotEmpty
         ? widget.items
-        : ["Google", "Amazon", "Meta", "Netflix"];
+        : ['Google', 'Amazon', 'Meta', 'Netflix'];
 
-    // duplicate for seamless scrolling
+    // Two copies of the list for seamless looping.
     final doubled = [...safeItems, ...safeItems];
 
     final borderColor = widget.isDark
@@ -53,6 +55,14 @@ class _MarqueeSectionState extends State<MarqueeSection>
     final backgroundColor = widget.isDark
         ? const Color(0xFF050F20).withOpacity(0.65)
         : AgniColors.white.withOpacity(0.65);
+
+    final textStyle =
+        AppTypography.displaySmall(color: textPrimary).copyWith();
+
+    final cycleW = measureMarqueeCycleWidth(context, safeItems, textStyle);
+
+    /// displaySmall line height ~44; slack for dividers.
+    const double marqueeBandHeight = 62;
 
     return Container(
       width: double.infinity,
@@ -77,7 +87,6 @@ class _MarqueeSectionState extends State<MarqueeSection>
 
           const SizedBox(height: 28),
 
-          // Gradient edge fade effect (premium marquee look)
           ShaderMask(
             shaderCallback: (rect) {
               return LinearGradient(
@@ -94,16 +103,17 @@ class _MarqueeSectionState extends State<MarqueeSection>
             },
             blendMode: BlendMode.dstIn,
             child: SizedBox(
-              // height: 44,
+              height: marqueeBandHeight,
+              width: double.infinity,
               child: AnimatedBuilder(
                 animation: _marqueeController,
                 builder: (_, __) {
                   return MarqueeRow(
                     items: doubled,
+                    cycleLength: safeItems.length,
+                    cycleWidth: cycleW,
                     progress: _marqueeController.value,
-                    textStyle: AppTypography.displaySmall(
-                      color: textPrimary,
-                    ).copyWith(),
+                    textStyle: textStyle,
                     dividerColor: borderColor,
                   );
                 },
