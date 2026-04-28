@@ -10,3 +10,7 @@ void setBufferSourceOnEnded(dynamic src, void Function() onDone) {}
 Future<Object?> resumeAudioContextPromise(dynamic ctx) async {
   throw UnsupportedError('WebAudio is web-only');
 }
+
+dynamic createAudioContextOrNull() => null;
+
+Future<void> playMediaElement(Object audioElement) async {}

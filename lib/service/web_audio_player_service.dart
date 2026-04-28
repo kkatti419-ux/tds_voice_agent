@@ -53,11 +53,9 @@ class AudioPlayerService {
   static Future<void> ensurePlaybackAudioContext() async {
     if (!kIsWeb) return;
     try {
-      final w = html.window as dynamic;
-      final ctor = w.AudioContext ?? w.webkitAudioContext;
-      if (ctor == null) return;
-      _sharedDecodeContext ??= ctor() as dynamic;
+      _sharedDecodeContext ??= js_bridge.createAudioContextOrNull();
       final ctx = _sharedDecodeContext;
+      if (ctx == null) return;
       final state = ctx.state?.toString() ?? '';
       if (state == 'suspended') {
         await js_bridge.resumeAudioContextPromise(ctx);
@@ -86,18 +84,26 @@ class AudioPlayerService {
   }
 
   /// [HTMLMediaElement.play] can reject with NotAllowedError until a user gesture;
-  /// [resumeAudioContextIfNeeded] then one retry often succeeds after mic tap unlocks audio.
+  /// uses JS [play] + [resumeAudioContextIfNeeded] to avoid broken Promise interop
+  /// on first plays (`JSNoSuchMethodError` / `non-function` from [promiseToFuture]).
   Future<void> _playElementWithRetry(
     html.AudioElement audio, {
     required String context,
   }) async {
+    await resumeAudioContextIfNeeded();
     try {
-      await audio.play();
+      await js_bridge.playMediaElement(audio);
       return;
     } catch (e) {
-      _voiceAudioLog('$context: play() failed ($e) — retry after AudioContext resume');
+      _voiceAudioLog(
+        '$context: play() failed ($e) — retry after resume + short delay',
+      );
       await resumeAudioContextIfNeeded();
-      await audio.play();
+      await Future<void>.delayed(const Duration(milliseconds: 48));
+      try {
+        audio.load();
+      } catch (_) {}
+      await js_bridge.playMediaElement(audio);
       _voiceAudioLog('$context: play() OK after retry');
     }
   }
@@ -178,13 +184,14 @@ class AudioPlayerService {
     if (bytes.isEmpty) {
       return Future<void>.value();
     }
+    final owned = Uint8List.fromList(bytes);
     final playId = ++_nextPlayId;
     _voiceAudioLogPrint(
-      'playBytes ENQUEUE id=$playId len=${bytes.length} '
+      'playBytes ENQUEUE id=$playId len=${owned.length} '
       'queueLen=${_queue.length} isPlaying=$_isPlaying stopGen=$_stopGeneration',
     );
     final completer = Completer<void>();
-    _queue.add(_QueueItem.bytes(bytes, completer, playId));
+    _queue.add(_QueueItem.bytes(owned, completer, playId));
     _voiceAudioLog('playBytes ENQUEUED id=$playId queueLen=${_queue.length}');
     if (_isPlaying) return completer.future;
 
@@ -263,6 +270,10 @@ class AudioPlayerService {
     final audio = html.AudioElement(url);
     _webAudio = audio;
     _voiceAudioLog('url AudioElement created id=$playId');
+    try {
+      audio.setAttribute('playsinline', 'true');
+      audio.setAttribute('webkit-playsinline', 'true');
+    } catch (_) {}
 
     void completeSafe() {
       if (!done.isCompleted) done.complete();
@@ -400,15 +411,13 @@ class AudioPlayerService {
         return false;
       }
 
-      final copy = (bytes.offsetInBytes == 0 &&
-              bytes.lengthInBytes == bytes.buffer.lengthInBytes)
-          ? bytes
-          : Uint8List.fromList(bytes);
+      // Standalone buffer: exact WAV/MP3 length for decodeAudioData (no tail garbage).
+      final payload = Uint8List.fromList(bytes);
 
       final decodeSw = Stopwatch()..start();
       final audioBuf = await js_bridge.decodeAudioDataPromise(
         ctx,
-        copy.buffer,
+        payload.buffer,
       );
       decodeSw.stop();
       if (audioBuf == null) {
@@ -441,7 +450,7 @@ class AudioPlayerService {
         'WebAudio BUFFER_PLAYING id=$playId inLen=${bytes.length} '
         'decodeMs=${decodeSw.elapsedMilliseconds}',
       );
-      await done.future;
+      await done.future; 
       _voiceAudioLog('WebAudio BUFFER_ENDED id=$playId inLen=${bytes.length}');
       return true;
     } catch (e) {
@@ -451,6 +460,10 @@ class AudioPlayerService {
   }
 
   Future<void> _playWebBytesBlob(Uint8List bytes, {required int playId}) async {
+    if (bytes.isEmpty) {
+      _voiceAudioLog('blob id=$playId skip: empty payload (no blob URL)');
+      return;
+    }
     final mime = _guessAudioMime(bytes);
     final done = Completer<void>();
     _activePlaybackCompleter = done;
@@ -464,6 +477,10 @@ class AudioPlayerService {
     _webAudio = audio;
     audio.loop = false;
     audio.playbackRate = _kWebPlaybackRate;
+    try {
+      audio.setAttribute('playsinline', 'true');
+      audio.setAttribute('webkit-playsinline', 'true');
+    } catch (_) {}
 
     void completeSafe() {
       if (!done.isCompleted) done.complete();

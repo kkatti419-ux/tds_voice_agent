@@ -898,7 +898,7 @@ class VoiceViewModel extends ChangeNotifier {
         onTtsBytes: (bytes) {
           isAgentSpeaking = true;
           notifyListeners();
-          unawaited(_playerService.playBytes(bytes));
+          unawaited(_playerService.playBytes(Uint8List.fromList(bytes)));
         },
       );
 
