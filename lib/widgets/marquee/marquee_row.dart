@@ -53,49 +53,48 @@ class MarqueeRow extends StatelessWidget {
     required this.cycleWidth,
   });
 
-@override
-Widget build(BuildContext context) {
-  assert(
-    cycleLength > 0 && items.length % cycleLength == 0,
-    'items length must be multiple of cycleLength',
-  );
+  @override
+  Widget build(BuildContext context) {
+    assert(
+      cycleLength > 0 && items.length % cycleLength == 0,
+      'items length must be multiple of cycleLength',
+    );
 
-  final offset = -(progress * cycleWidth);
+    final offset = -(progress * cycleWidth);
 
-  return ClipRect(
-    child: OverflowBox(
-      alignment: Alignment.centerLeft,
-      minWidth: 0,
-      maxWidth: double.infinity,
-      child: Transform.translate(
-        offset: Offset(offset, 0),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: items.map((label) {
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 50),
-                  child: Text(
-                    label,
-                    style: textStyle,
-                    maxLines: 1,
-                    softWrap: false,
+    return ClipRect(
+      child: OverflowBox(
+        alignment: Alignment.centerLeft,
+        minWidth: 0,
+        maxWidth: double.infinity,
+        child: Transform.translate(
+          offset: Offset(offset, 0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: items.map((label) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 50),
+                    child: Text(
+                      label,
+                      style: textStyle,
+                      maxLines: 1,
+                      softWrap: false,
+                    ),
                   ),
-                ),
-                Container(
-                  height: 30,
-                  width: kMarqueeDividerWidth,
-                  color: dividerColor,
-                ),
-              ],
-            );
-          }).toList(),
+                  Container(
+                    height: 30,
+                    width: kMarqueeDividerWidth,
+                    color: dividerColor,
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
