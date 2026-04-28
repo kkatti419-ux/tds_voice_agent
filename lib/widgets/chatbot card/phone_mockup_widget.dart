@@ -47,13 +47,10 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
 
   bool get isDark => widget.isDark;
 
-<<<<<<< Updated upstream
   Color get bg => isDark ? AgniColors.black : AgniColors.neutralGrey;
 
   Color get border => isDark ? AgniColors.white12 : AgniColors.black12;
 
-=======
->>>>>>> Stashed changes
   @override
   Widget build(BuildContext context) {
     return Consumer<VoiceViewModel>(
@@ -83,11 +80,7 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
             children: [
               const SizedBox(height: 20),
 
-<<<<<<< Updated upstream
               /// Status
-=======
-              /// STATUS
->>>>>>> Stashed changes
               Text(
                 vm.statusText,
                 style: AppTypography.bodyMedium(
