@@ -85,6 +85,13 @@ void audioBufferSourceConnectToContextDestination(
   js_util.callMethod<Object?>(src, 'connect', <Object?>[destination]);
 }
 
+void audioBufferSourceSetPlaybackRate(dynamic src, double rate) {
+  final Object? param = js_util.getProperty(src, 'playbackRate');
+  if (param != null) {
+    js_util.setProperty(param, 'value', rate);
+  }
+}
+
 void audioBufferSourceStart(dynamic src, double when) {
   js_util.callMethod<Object?>(src, 'start', <Object?>[when]);
 }

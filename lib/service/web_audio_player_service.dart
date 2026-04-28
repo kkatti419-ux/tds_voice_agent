@@ -14,7 +14,7 @@ import 'web_audio_js_bridge_stub.dart'
 const String _kLogName = 'VoiceAudio';
 
 /// Web [HTMLMediaElement.playbackRate] for TTS / URL playback (1.0 = normal).
-const double _kWebPlaybackRate = 1.5;
+const double _kWebPlaybackRate = 1.3;
 
 void _voiceAudioLog(String message) {
   debugPrint('[$_kLogName] $message');
@@ -433,6 +433,7 @@ class AudioPlayerService {
       }
       js_bridge.audioBufferSourceSetBuffer(src, audioBuf as Object?);
       js_bridge.audioBufferSourceConnectToContextDestination(src, ctx);
+      js_bridge.audioBufferSourceSetPlaybackRate(src, _kWebPlaybackRate);
       _activeBufferSource = src;
 
       js_bridge.setBufferSourceOnEnded(src, () {

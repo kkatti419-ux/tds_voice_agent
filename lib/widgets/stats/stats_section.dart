@@ -36,6 +36,7 @@ class StatsSection extends StatelessWidget {
             );
           } else {
             return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: stats
                   .map(
                     (s) => Expanded(
