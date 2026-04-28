@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 
 <head>
@@ -88,4 +88,117 @@
 </body>
 
 </html>
-```
+``` -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Transparent Globe</title>
+    <style>
+        body {
+            margin: 0;
+            background: transparent;
+            overflow: hidden;
+        }
+
+        #globeViz {
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="globeViz"></div>
+
+    <script src="https://unpkg.com/three"></script>
+    <script src="https://unpkg.com/globe.gl"></script>
+
+    <script>
+        const globe = Globe()(document.getElementById('globeViz'))
+            .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-day.jpg')
+            .backgroundColor('rgba(0,0,0,0)');
+
+        // 📍 Bengaluru (HQ)
+        const myLocation = {
+            lat: 12.9716,
+            lng: 77.5946,
+            label: "HQ - Bengaluru"
+        };
+
+        // 🌍 5 Countries
+        const countries = [
+            { name: "USA", lat: 37.0902, lng: -95.7129 },
+            { name: "Brazil", lat: -14.2350, lng: -51.9253 },
+            { name: "Germany", lat: 51.1657, lng: 10.4515 },
+            { name: "Australia", lat: -25.2744, lng: 133.7751 },
+            { name: "Japan", lat: 36.2048, lng: 138.2529 }
+        ];
+
+        // 🔴 Points (HQ + Countries) - brighter colors
+        globe.pointsData([
+            {
+                lat: myLocation.lat,
+                lng: myLocation.lng,
+                size: 1,
+                color: '#00FFAA' // neon green (HQ)
+            },
+            ...countries.map(c => ({
+                lat: c.lat,
+                lng: c.lng,
+                size: 0.8,
+                color: '#FF3D00' // bright orange-red
+            }))
+        ])
+            .pointAltitude(0.05) // lift points for visibility
+            .pointColor('color');
+
+        // 💫 Stronger pulse rings (glow effect)
+        globe.ringsData([
+            myLocation,
+            ...countries
+        ])
+            .ringColor(d => d.name ? '#FF3D00' : '#00FFAA')
+            .ringMaxRadius(8)
+            .ringPropagationSpeed(3)
+            .ringRepeatPeriod(1000);
+
+        // 🏷️ Labels (HQ + countries)
+        globe.labelsData([
+            myLocation,
+            ...countries.map(c => ({
+                lat: c.lat,
+                lng: c.lng,
+                label: c.name
+            }))
+        ])
+            .labelText('label')
+            .labelSize(1.8)
+            .labelColor(() => '#FFFFFF')
+            .labelAltitude(0.08);
+
+        // 🎮 Controls
+        const controls = globe.controls();
+
+        controls.enableRotate = true;
+        controls.enableZoom = false;
+        controls.enablePan = false;
+
+        // 🔄 Auto rotate
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 3;
+
+        // 🎯 Focus on HQ
+        globe.pointOfView(
+            { lat: myLocation.lat, lng: myLocation.lng, altitude: 2 },
+            2000
+        );
+
+    </script>
+
+</body>
+
+</html>
