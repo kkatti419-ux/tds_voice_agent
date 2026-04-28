@@ -118,6 +118,10 @@
     <script src="https://unpkg.com/globe.gl"></script>
 
     <script>
+        // Responsive adjustments
+        const isMobile = window.innerWidth < 768;
+        const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+
         const globe = Globe()(document.getElementById('globeViz'))
             .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-day.jpg')
             .backgroundColor('rgba(0,0,0,0)');
@@ -138,18 +142,25 @@
             { name: "Japan", lat: 36.2048, lng: 138.2529 }
         ];
 
+        // Responsive sizes
+        const pointSize = isMobile ? 0.5 : isTablet ? 0.7 : 1;
+        const countryPointSize = isMobile ? 0.4 : isTablet ? 0.6 : 0.8;
+        const ringMaxRadius = isMobile ? 4 : isTablet ? 6 : 8;
+        const labelSize = isMobile ? 1.2 : isTablet ? 1.5 : 1.8;
+        const altitude = isMobile ? 2.5 : isTablet ? 2.2 : 2;
+
         // 🔴 Points (HQ + Countries) - brighter colors
         globe.pointsData([
             {
                 lat: myLocation.lat,
                 lng: myLocation.lng,
-                size: 1,
+                size: pointSize,
                 color: '#00FFAA' // neon green (HQ)
             },
             ...countries.map(c => ({
                 lat: c.lat,
                 lng: c.lng,
-                size: 0.8,
+                size: countryPointSize,
                 color: '#FF3D00' // bright orange-red
             }))
         ])
@@ -162,7 +173,7 @@
             ...countries
         ])
             .ringColor(d => d.name ? '#FF3D00' : '#00FFAA')
-            .ringMaxRadius(8)
+            .ringMaxRadius(ringMaxRadius)
             .ringPropagationSpeed(3)
             .ringRepeatPeriod(1000);
 
@@ -176,7 +187,7 @@
             }))
         ])
             .labelText('label')
-            .labelSize(1.8)
+            .labelSize(labelSize)
             .labelColor(() => '#FFFFFF')
             .labelAltitude(0.08);
 
@@ -189,14 +200,23 @@
 
         // 🔄 Auto rotate
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 3;
+        controls.autoRotateSpeed = isMobile ? 2 : 3;
 
         // 🎯 Focus on HQ
         globe.pointOfView(
-            { lat: myLocation.lat, lng: myLocation.lng, altitude: 2 },
+            { lat: myLocation.lat, lng: myLocation.lng, altitude: altitude },
             2000
         );
 
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const newIsMobile = window.innerWidth < 768;
+            const newIsTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+
+            if (newIsMobile !== isMobile || newIsTablet !== isTablet) {
+                location.reload(); // Simple way to reapply responsive settings
+            }
+        });
     </script>
 
 </body>
