@@ -34,18 +34,15 @@ class ComparisonsSection extends StatelessWidget {
                   .map(
                     (comp) => Padding(
                       padding: const EdgeInsets.only(bottom: 24),
-                      child: AspectRatio(
-                        aspectRatio: 1,
-                        child: ComparisonCard(
-                          isOurs: comp.isOurs,
-                          badge: comp.badge,
-                          headline: comp.headline,
-                          items: comp.items,
-                          isDark: isDark,
-                          textColor: textColor,
-                          text2Color: text2Color,
-                          text3Color: text3Color,
-                        ),
+                      child: ComparisonCard(
+                        isOurs: comp.isOurs,
+                        badge: comp.badge,
+                        headline: comp.headline,
+                        items: comp.items,
+                        isDark: isDark,
+                        textColor: textColor,
+                        text2Color: text2Color,
+                        text3Color: text3Color,
                       ),
                     ),
                   )
