@@ -120,28 +120,31 @@ class VoiceViewModel extends ChangeNotifier {
       _jsonSub = _socket.jsonStream.listen(_onWebJson);
       _audioSub = _socket.audioStream.listen(_onWebAudio);
       unawaited(
-        _socket.connectAsync().then((_) {
-          if (agniWireLogsEnabled) {
-            _wireLog(
-              '[VoiceVM] connect() resolved — url=${SocketManager.currentWsUrl} '
-              'isConnected=${_socket.isConnected} '
-              'isConnecting=${_socket.isConnecting}',
-            );
-          }
-          unawaited(AudioPlayerService.ensurePlaybackAudioContext());
-          notifyListeners();
-        }).catchError((Object e, StackTrace st) {
-          if (agniWireLogsEnabled) {
-            _wireLog('[VoiceVM] connect() failed: $e');
-          }
-          developer.log(
-            'connectAsync failed',
-            name: 'VoiceVM',
-            error: e,
-            stackTrace: st,
-          );
-          notifyListeners();
-        }),
+        _socket
+            .connectAsync()
+            .then((_) {
+              if (agniWireLogsEnabled) {
+                _wireLog(
+                  '[VoiceVM] connect() resolved — url=${SocketManager.currentWsUrl} '
+                  'isConnected=${_socket.isConnected} '
+                  'isConnecting=${_socket.isConnecting}',
+                );
+              }
+              unawaited(AudioPlayerService.ensurePlaybackAudioContext());
+              notifyListeners();
+            })
+            .catchError((Object e, StackTrace st) {
+              if (agniWireLogsEnabled) {
+                _wireLog('[VoiceVM] connect() failed: $e');
+              }
+              developer.log(
+                'connectAsync failed',
+                name: 'VoiceVM',
+                error: e,
+                stackTrace: st,
+              );
+              notifyListeners();
+            }),
       );
     }
   }
@@ -599,15 +602,8 @@ class VoiceViewModel extends ChangeNotifier {
   ///
   /// Does not require [isListening]: the server may stream TTS before or without the local mic
   /// (same idea as AgniApp always wiring `audioChunks` while connected).
-  void _beginWebAssistantTurn() {
+  Future<void> _beginWebAssistantTurn() async {
     if (!kIsWeb) return;
-
-    // ✅ RESET DEBUG
-    _audioChunkCount = 0;
-    _totalAudioBytes = 0;
-    _droppedChunks = 0;
-    _textEventCount = 0;
-
     _exitAwaitingPolicyForAssistantSignal();
     if (_sessionPhase != VoiceSessionPhase.listening) return;
     if (_awaitingWebTurn) {
