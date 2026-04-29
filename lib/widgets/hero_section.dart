@@ -59,9 +59,12 @@ class _HeroSectionState extends State<HeroSection>
     showContactFormDialog(context, isDark: isDark);
   }
 
-  void _openDemoVideo() {
-    context.read<VoiceViewModel>().stopAgentForDemoVideo();
-    showDialog<void>(
+  Future<void> _openDemoVideo() async {
+    final vm = context.read<VoiceViewModel>();
+    vm.stopAgentForDemoVideo();
+    await vm.pauseListeningForDemoVideo();
+    if (!mounted) return;
+    await showDialog<void>(
       context: context,
       barrierColor: Colors.black.withOpacity(0.8),
       builder: (_) => Dialog(
@@ -75,6 +78,8 @@ class _HeroSectionState extends State<HeroSection>
         ),
       ),
     );
+    if (!mounted) return;
+    await vm.resumeListeningAfterDemoVideo();
   }
 
   @override

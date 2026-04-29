@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:html' as html;
 
-Future<bool> composeContactEmail({
+import 'compose_contact_email_result.dart';
+
+Future<ComposeContactEmailResult> composeContactEmail({
   required String recipientEmail,
   required String name,
   required String phone,
@@ -10,7 +12,10 @@ Future<bool> composeContactEmail({
   try {
     if (recipientEmail.isEmpty || !recipientEmail.contains('@')) {
       html.window.console.error('Invalid email: $recipientEmail');
-      return false;
+      return const ComposeContactEmailResult(
+        success: false,
+        errorMessage: 'Invalid recipient email',
+      );
     }
 
     const endpoint = 'https://demo.nitya.ai/send-mail';
@@ -30,9 +35,18 @@ Future<bool> composeContactEmail({
     );
 
     final status = request.status ?? 0;
-    return status >= 200 && status < 300;
+    final body = request.responseText ?? '';
+    final ok = status >= 200 && status < 300;
+    return ComposeContactEmailResult(
+      success: ok,
+      statusCode: status,
+      responseBody: body.isEmpty ? null : body,
+    );
   } catch (error) {
     html.window.console.error('mail submit failed: $error');
-    return false;
+    return ComposeContactEmailResult(
+      success: false,
+      errorMessage: error.toString(),
+    );
   }
 }

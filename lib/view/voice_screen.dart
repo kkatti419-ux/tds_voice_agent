@@ -169,7 +169,11 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                       child: InkWell(
                         onTap: () {
                           Navigator.of(context).pop();
-                          showContactFormDialog(context, isDark: isDark);
+                          showContactFormDialog(
+                            context,
+                            isDark: isDark,
+                            showSalesOfficeAddress: true,
+                          );
                         },
                         borderRadius: BorderRadius.circular(24),
                         child: Container(
@@ -235,8 +239,11 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                   navItems: content.navItems,
                   onToggleTheme: widget.onToggleTheme,
                   onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-                  onContactSales: () =>
-                      showContactFormDialog(context, isDark: isDark),
+                  onContactSales: () => showContactFormDialog(
+                    context,
+                    isDark: isDark,
+                    showSalesOfficeAddress: true,
+                  ),
                   onOpenRoute: (route) {
                     Navigator.of(context).pushNamed(route);
                   },

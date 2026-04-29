@@ -488,70 +488,91 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
     return Consumer<VoiceViewModel>(
       builder: (_, vm, __) {
         return Center(
-          child: Container(
-            width: 340,
-            height: 500,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF08162A).withOpacity(0.80)
-                  : AgniColors.white.withOpacity(0.72),
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(
-                color: isDark
-                    ? AgniColors.oceanBright.withOpacity(0.18)
-                    : AgniColors.white.withOpacity(0.90),
-                width: isDark ? 1 : 1.5,
-              ),
-              boxShadow: isDark
-                  ? [
-                      BoxShadow(
-                        color: AgniColors.oceanBright.withOpacity(0.20),
-                        blurRadius: 80,
-                      ),
-                      BoxShadow(
-                        color: const Color(0xFF000000).withOpacity(0.40),
-                        blurRadius: 24,
-                        offset: const Offset(0, 24),
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: const Color(0xFF0A2342).withOpacity(0.22),
-                        blurRadius: 80,
-                        offset: const Offset(0, 20),
-                      ),
-                    ],
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // width: 340,
+              //height: 500,
+              final maxCardW = math.min(340.0, constraints.maxWidth);
+              final maxCardH = MediaQuery.sizeOf(context).height * 0.88;
+              const animDuration = Duration(milliseconds: 280);
+              const animCurve = Curves.easeOutCubic;
+              return AnimatedSize(
+                duration: animDuration,
+                curve: animCurve,
+                alignment: Alignment.topCenter,
+                child: AnimatedContainer(
+                  duration: animDuration,
+                  curve: animCurve,
+                  width: maxCardW,
                   decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF08162A).withOpacity(0.80)
+                        : AgniColors.white.withOpacity(0.72),
                     borderRadius: BorderRadius.circular(40),
-                    gradient: LinearGradient(
-                      begin: const Alignment(-0.7, -0.9),
-                      end: const Alignment(1, 1),
-                      colors: isDark
-                          ? [
-                              AgniColors.oceanBright.withOpacity(0.06),
-                              AgniColors.forestLight.withOpacity(0.05),
-                            ]
-                          : [
-                              const Color(0xFFB4D7EB).withOpacity(0.22),
-                              const Color(0xFFB4E1C8).withOpacity(0.18),
-                            ],
+                    border: Border.all(
+                      color: isDark
+                          ? AgniColors.oceanBright.withOpacity(0.18)
+                          : AgniColors.white.withOpacity(0.90),
+                      width: isDark ? 1 : 1.5,
                     ),
+                    boxShadow: isDark
+                        ? [
+                            BoxShadow(
+                              color: AgniColors.oceanBright.withOpacity(0.20),
+                              blurRadius: 80,
+                            ),
+                            BoxShadow(
+                              color: const Color(0xFF000000).withOpacity(0.40),
+                              blurRadius: 24,
+                              offset: const Offset(0, 24),
+                            ),
+                          ]
+                        : [
+                            BoxShadow(
+                              color: const Color(0xFF0A2342).withOpacity(0.22),
+                              blurRadius: 80,
+                              offset: const Offset(0, 20),
+                            ),
+                          ],
                   ),
-                ),
-                ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(context)
-                      .copyWith(scrollbars: false),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(14, 40, 14, 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(40),
+                            gradient: LinearGradient(
+                              begin: const Alignment(-0.7, -0.9),
+                              end: const Alignment(1, 1),
+                              colors: isDark
+                                  ? [
+                                      AgniColors.oceanBright.withOpacity(0.06),
+                                      AgniColors.forestLight.withOpacity(0.05),
+                                    ]
+                                  : [
+                                      const Color(0xFFB4D7EB).withOpacity(0.22),
+                                      const Color(0xFFB4E1C8).withOpacity(0.18),
+                                    ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxHeight: maxCardH),
+                        child: ScrollConfiguration(
+                          behavior: ScrollConfiguration.of(context)
+                              .copyWith(scrollbars: false),
+                          child: ListView(
+                            shrinkWrap: true,
+                            physics: const ClampingScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(14, 40, 14, 20),
+                            children: [
+                              Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.stretch,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
                         if (vm.isOffline) _offlineStrip(),
                         if (vm.micBlockedMessage != null) _micBlockedStrip(vm),
                         if (vm.presenceCheckSent) _presenceCheckInStrip(vm),
@@ -560,53 +581,59 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
                         Center(child: _talkingAvatar()),
                         const SizedBox(height: 14),
                         Center(child: _waveform(vm)),
-                        if (_langs.isNotEmpty) ...[
-                          const SizedBox(height: 20),
-                          AnimatedOpacity(
-                            duration: const Duration(milliseconds: 400),
-                            opacity: _langOpacity,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 400),
-                              transform: Matrix4.translationValues(
-                                0,
-                                _langOffset,
-                                0,
-                              ),
-                              child: Text(
-                                _langs[_langIndex],
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.playfairDisplay(
-                                  fontSize: 27.2,
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                        Text(
-                          'Agentic copilots · 24/7 uptime',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.dmMono(
-                            fontSize: 12.48,
-                            color: text3Color,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _pricingCard(),
+                        
+                        // if (_langs.isNotEmpty) ...[
+                        //   const SizedBox(height: 20),
+                        //   AnimatedOpacity(
+                        //     duration: const Duration(milliseconds: 400),
+                        //     opacity: _langOpacity,
+                        //     child: AnimatedContainer(
+                        //       duration: const Duration(milliseconds: 400),
+                        //       transform: Matrix4.translationValues(
+                        //         0,
+                        //         _langOffset,
+                        //         0,
+                        //       ),
+                        //       child: Text(
+                        //         _langs[_langIndex],
+                        //         textAlign: TextAlign.center,
+                        //         style: GoogleFonts.playfairDisplay(
+                        //           fontSize: 27.2,
+                        //           fontWeight: FontWeight.w700,
+                        //           color: textColor,
+                        //         ),
+                        //       ),
+                        //     ),
+                        //   ),
+                        //   const SizedBox(height: 8),
+                        // ],
+                        // Text(
+                        //   'Agentic copilots · 24/7 uptime',
+                        //   textAlign: TextAlign.center,
+                        //   style: GoogleFonts.dmMono(
+                        //     fontSize: 12.48,
+                        //     color: text3Color,
+                        //   ),
+                        // ),
+                        // const SizedBox(height: 16),
+                        // _pricingCard(),
                         if (vm.showContinueButtons) ...[
                           const SizedBox(height: 12),
                           _continueButtons(vm),
                         ],
                         const SizedBox(height: 16),
                         Center(child: _micButton(vm)),
-                      ],
-                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
         );
       },

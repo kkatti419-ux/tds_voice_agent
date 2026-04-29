@@ -1,21 +1,34 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:tds_voice_agent/core/contact_email.dart';
 
 /// Same modal as hero **Talk to an expert** — used from navbar **Contact sales**.
-void showContactFormDialog(BuildContext context, {required bool isDark}) {
+void showContactFormDialog(
+  BuildContext context, {
+  required bool isDark,
+  bool showSalesOfficeAddress = false,
+}) {
   showDialog<void>(
     context: context,
     barrierColor: Colors.black.withOpacity(0.6),
-    builder: (_) => ContactFormDialog(isDark: isDark),
+    builder: (_) => ContactFormDialog(
+      isDark: isDark,
+      showSalesOfficeAddress: showSalesOfficeAddress,
+    ),
   );
 }
 
 class ContactFormDialog extends StatefulWidget {
   final bool isDark;
+  final bool showSalesOfficeAddress;
 
-  const ContactFormDialog({super.key, required this.isDark});
+  const ContactFormDialog({
+    super.key,
+    required this.isDark,
+    this.showSalesOfficeAddress = false,
+  });
 
   @override
   State<ContactFormDialog> createState() => _ContactFormDialogState();
@@ -61,15 +74,28 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
 
   Future<void> _submitContactForm() async {
     if (!_formKey.currentState!.validate()) return;
-    final didSend = await composeContactEmail(
+    final result = await composeContactEmail(
       recipientEmail: emailController.text.trim(),
       name: nameController.text.trim(),
       phone: phoneController.text.trim(),
       description: descController.text.trim(),
     );
 
+    final bodyPreview = result.responseBody == null
+        ? ''
+        : result.responseBody!.length > 512
+            ? '${result.responseBody!.substring(0, 512)}…'
+            : result.responseBody!;
+    developer.log(
+      'composeContactEmail: success=${result.success} '
+      'statusCode=${result.statusCode} '
+      'error=${result.errorMessage} '
+      'body=$bodyPreview',
+      name: 'ContactFormDialog',
+    );
+
     if (!mounted) return;
-    if (didSend) {
+    if (result.success) {
       setState(() => submitted = true);
       return;
     }
@@ -206,6 +232,56 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
             },
             decoration: _decoration('Description'),
           ),
+          if (widget.showSalesOfficeAddress) ...[
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Company contact',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _subtitleColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+
+              child: Text(
+                'sales@technodysis.com',
+                style: TextStyle(
+                  color: _subtitleColor,
+                  height: 1.45,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Office address',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _subtitleColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Subramanya Arcade\n'
+              'Bannerghatta Rd, OLd Gurappanapalya, BTM 1st Stage, Bengaluru, Karnataka 560029, India',
+              style: TextStyle(
+                color: _subtitleColor,
+                height: 1.45,
+                fontSize: 13,
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           _gradientButton('Submit', _submitContactForm),
         ],

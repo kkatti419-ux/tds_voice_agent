@@ -60,6 +60,9 @@ class VoiceViewModel extends ChangeNotifier {
   /// User tapped mic off — do not auto-start until they unmute.
   bool _userMutedMic = false;
 
+  /// True if mic was live before hero demo video overlay; used to resume after close.
+  bool _listeningBeforeDemoVideo = false;
+
   /// When true, binary TTS from the socket is not played (chat text still updates).
   bool agentTtsMuted = false;
 
@@ -312,6 +315,45 @@ class VoiceViewModel extends ChangeNotifier {
     unawaited(_playerService.stop());
     isAgentSpeaking = false;
     notifyListeners();
+  }
+
+  /// Pause mic capture while demo video plays — does not set [_userMutedMic].
+  Future<void> pauseListeningForDemoVideo() async {
+    _listeningBeforeDemoVideo = isListening;
+    if (!isListening) return;
+    _vmLog('pauseListeningForDemoVideo');
+    if (kIsWeb) {
+      _cancelIdleTimers();
+      _sessionPhase = VoiceSessionPhase.listening;
+      _bargeInSpeechStart = null;
+      isListening = false;
+      _cancelWebTurnForInterrupt('demo_video_mic');
+      _audioWeb.stop();
+      notifyListeners();
+      return;
+    }
+    await _discardRecordingWithoutSend();
+  }
+
+  Future<void> _discardRecordingWithoutSend() async {
+    if (!isListening) return;
+    if (_isStopping) return;
+    _vmLog('discardRecordingWithoutSend (demo video)');
+    _isStopping = true;
+    isListening = false;
+    notifyListeners();
+    await _recordService.stopRecording();
+    _isStopping = false;
+    notifyListeners();
+  }
+
+  /// Restore listening after demo video if it was active before [pauseListeningForDemoVideo].
+  Future<void> resumeListeningAfterDemoVideo() async {
+    if (!_listeningBeforeDemoVideo) return;
+    _listeningBeforeDemoVideo = false;
+    if (_userMutedMic) return;
+    _vmLog('resumeListeningAfterDemoVideo → startListening');
+    await startListening();
   }
 
   /// Mic button: mute capture if live, else unmute and start capture.
