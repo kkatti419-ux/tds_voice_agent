@@ -55,7 +55,8 @@ Future<Object?> resumeAudioContextPromise(dynamic ctx) async {
 dynamic createAudioContextOrNull() {
   try {
     final g = js_util.globalThis;
-    final ctor = js_util.getProperty(g, 'AudioContext') ??
+    final ctor =
+        js_util.getProperty(g, 'AudioContext') ??
         js_util.getProperty(g, 'webkitAudioContext');
     if (ctor == null) return null;
     return js_util.callConstructor(ctor, const <Object>[]);
@@ -85,13 +86,6 @@ void audioBufferSourceConnectToContextDestination(
   js_util.callMethod<Object?>(src, 'connect', <Object?>[destination]);
 }
 
-void audioBufferSourceSetPlaybackRate(dynamic src, double rate) {
-  final Object? param = js_util.getProperty(src, 'playbackRate');
-  if (param != null) {
-    js_util.setProperty(param, 'value', rate);
-  }
-}
-
 void audioBufferSourceStart(dynamic src, double when) {
   js_util.callMethod<Object?>(src, 'start', <Object?>[when]);
 }
@@ -105,6 +99,16 @@ void audioBufferSourceStop(dynamic src, double when) {
 void audioBufferSourceDisconnect(dynamic src) {
   try {
     js_util.callMethod<Object?>(src, 'disconnect', const <Object>[]);
+  } catch (_) {}
+}
+
+/// [HTMLMediaElement.preservesPitch] — when true, [playbackRate] changes may keep pitch (browser-dependent).
+void mediaElementSetPreservesPitch(dynamic mediaElement, bool preserve) {
+  try {
+    js_util.setProperty(mediaElement, 'preservesPitch', preserve);
+  } catch (_) {}
+  try {
+    js_util.setProperty(mediaElement, 'webkitPreservesPitch', preserve);
   } catch (_) {}
 }
 

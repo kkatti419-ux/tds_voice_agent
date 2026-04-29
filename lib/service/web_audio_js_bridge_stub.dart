@@ -22,12 +22,12 @@ void audioBufferSourceConnectToContextDestination(
   dynamic audioContext,
 ) {}
 
-void audioBufferSourceSetPlaybackRate(dynamic src, double rate) {}
-
 void audioBufferSourceStart(dynamic src, double when) {}
 
 void audioBufferSourceStop(dynamic src, double when) {}
 
 void audioBufferSourceDisconnect(dynamic src) {}
+
+void mediaElementSetPreservesPitch(dynamic mediaElement, bool preserve) {}
 
 Future<void> playMediaElement(Object audioElement) async {}

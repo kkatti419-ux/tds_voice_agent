@@ -15,7 +15,8 @@ import 'web_audio_js_bridge_stub.dart'
 const String _kLogName = 'VoiceAudio';
 
 /// Web [HTMLMediaElement.playbackRate] for TTS / URL playback (1.0 = normal).
-const double _kWebPlaybackRate = 1.1;
+/// +0.2 vs normal speed → 1.2×. Pitch preservation uses JS `preservesPitch` on audio elements before rate.
+const double _kWebPlaybackRate = 1.4;
 
 void _voiceAudioLog(String message) {
   debugPrint('[$_kLogName] $message');
@@ -279,6 +280,7 @@ class AudioPlayerService {
     }
 
     audio.loop = false;
+    js_bridge.mediaElementSetPreservesPitch(audio, true);
     audio.playbackRate = _kWebPlaybackRate;
 
     audio.onEnded.first.then((_) {
@@ -383,18 +385,26 @@ class AudioPlayerService {
       'playBytes pipeline id=$playId len=${bytes.length} mime=$mime header4=$head4',
     );
 
+    // Blob + `<audio>` uses preservesPitch + playbackRate (pitch-preserving where supported).
+    // Decode + AudioBufferSourceNode cannot preserve pitch at non-1.0 rate; use blob first.
+    try {
+      await _playWebBytesBlob(bytes, playId: playId);
+      _voiceAudioLogPrint(
+        'playBytes BLOB_PATH_DONE id=$playId elapsedMs=${sw.elapsedMilliseconds}',
+      );
+      return;
+    } catch (e) {
+      _voiceAudioLog('playBytes id=$playId blob failed ($e) → decode fallback');
+    }
+
     if (await _tryPlayWebBytesDecode(bytes, playId: playId)) {
       _voiceAudioLogPrint(
-        'playBytes DECODE_PATH_OK id=$playId elapsedMs=${sw.elapsedMilliseconds}',
+        'playBytes DECODE_FALLBACK_OK id=$playId elapsedMs=${sw.elapsedMilliseconds}',
       );
       return;
     }
-    _voiceAudioLog(
-      'playBytes id=$playId decode skipped/failed → blob fallback',
-    );
-    await _playWebBytesBlob(bytes, playId: playId);
-    _voiceAudioLogPrint(
-      'playBytes BLOB_PATH_DONE id=$playId elapsedMs=${sw.elapsedMilliseconds}',
+    throw StateError(
+      'playBytes failed id=$playId (blob threw and decode failed)',
     );
   }
 
@@ -437,7 +447,6 @@ class AudioPlayerService {
       }
       js_bridge.audioBufferSourceSetBuffer(src, audioBuf as Object?);
       js_bridge.audioBufferSourceConnectToContextDestination(src, ctx);
-      js_bridge.audioBufferSourceSetPlaybackRate(src, _kWebPlaybackRate);
       _activeBufferSource = src;
 
       js_bridge.setBufferSourceOnEnded(src, () {
@@ -481,6 +490,7 @@ class AudioPlayerService {
     final audio = html.AudioElement(url);
     _webAudio = audio;
     audio.loop = false;
+    js_bridge.mediaElementSetPreservesPitch(audio, true);
     audio.playbackRate = _kWebPlaybackRate;
     try {
       audio.setAttribute('playsinline', 'true');
