@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:developer' as developer;
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:universal_html/html.dart' as html;
 
 import 'web_audio_js_bridge_stub.dart'
-    if (dart.library.html) 'web_audio_js_bridge_web.dart'
-    as js_bridge;
     if (dart.library.html) 'web_audio_js_bridge_web.dart'
     as js_bridge;
 

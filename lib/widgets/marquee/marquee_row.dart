@@ -45,7 +45,6 @@ class MarqueeRow extends StatelessWidget {
 
   const MarqueeRow({
     super.key,
-    super.key,
     required this.items,
     required this.cycleLength,
     required this.progress,
