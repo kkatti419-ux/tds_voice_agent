@@ -150,13 +150,14 @@
 //   }
 // }
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
 import 'package:tds_voice_agent/globe/globe_page.dart';
 import 'package:tds_voice_agent/theme/app_typography.dart';
 import 'package:tds_voice_agent/widgets/cta_section.dart';
-import 'package:tds_voice_agent/widgets/earth/earth_global_container.dart';
 
 class EarthSection extends StatefulWidget {
   final List<LangItem> langPills;
@@ -185,6 +186,21 @@ class LangItem {
 class _EarthSectionState extends State<EarthSection>
     with SingleTickerProviderStateMixin {
   late AnimationController _globeController;
+
+  /// Square iframe globe: scale with section width (mobile vs tablet vs desktop).
+  double _globeSideForLayoutWidth(double maxWidth) {
+    final w = maxWidth.isFinite && maxWidth > 0 ? maxWidth : 800.0;
+    if (w < 420) {
+      return math.max(220, w * 0.94);
+    }
+    if (w < 720) {
+      return math.min(w * 0.88, 480);
+    }
+    if (w < 1100) {
+      return math.min(w * 0.58, 540);
+    }
+    return math.min(w * 0.45, 560);
+  }
 
   @override
   void initState() {
@@ -271,12 +287,18 @@ class _EarthSectionState extends State<EarthSection>
             ),
           ),
 
-          /// GLOBE
-          Container(
-            color: Colors.transparent,
-            height: 500,
-            width: 500,
-            child: GlobePage(),
+          /// GLOBE (responsive square; iframe fills cell)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final side = _globeSideForLayoutWidth(constraints.maxWidth);
+              return Center(
+                child: SizedBox(
+                  width: side,
+                  height: side,
+                  child: const GlobePage(),
+                ),
+              );
+            },
           ),
 
           // AnimatedBuilder(

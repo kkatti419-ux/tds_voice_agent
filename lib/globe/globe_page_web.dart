@@ -46,21 +46,18 @@ class _GlobePageState extends State<GlobePage> {
   void _onWindowMessage(html.MessageEvent event) {
     if (event.origin != html.window.location.origin) return;
     final data = event.data;
-    if (data is! Map) return;
-    if (data['source'] != 'tds_globe' || data['type'] != 'wheel') return;
-    final dy = data['deltaY'];
-    if (dy is! num) return;
-    final delta = dy.toDouble();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final pos = Scrollable.maybeOf(context)?.position;
-      if (pos == null) return;
-      final next = (pos.pixels + delta).clamp(
-        pos.minScrollExtent,
-        pos.maxScrollExtent,
-      );
-      pos.jumpTo(next.toDouble());
-    });
+    if (data is! String || !data.startsWith('tds_globe_wheel:')) return;
+    final raw = data.substring('tds_globe_wheel:'.length);
+    final delta = double.tryParse(raw);
+    if (delta == null) return;
+    if (!mounted) return;
+    final pos = Scrollable.maybeOf(context)?.position;
+    if (pos == null) return;
+    final next = (pos.pixels + delta).clamp(
+      pos.minScrollExtent,
+      pos.maxScrollExtent,
+    );
+    pos.jumpTo(next.toDouble());
   }
 
   @override

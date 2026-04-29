@@ -22,7 +22,6 @@
 
     <div id="globeViz"></div>
 
-    <script src="https://unpkg.com/three"></script>
     <script src="https://unpkg.com/globe.gl"></script>
 
     <script>
@@ -33,6 +32,11 @@
         const globe = Globe()(document.getElementById('globeViz'))
             .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-day.jpg')
             .backgroundColor('rgba(0,0,0,0)');
+
+        // Keep canvas exactly matched to iframe/container to avoid off-center/cropped rendering.
+        globe
+            .width(window.innerWidth)
+            .height(window.innerHeight);
 
         // 📍 Bengaluru (HQ)
         const myLocation = {
@@ -62,30 +66,65 @@
             { name: "Dubai", lat: 25.2048, lng: 55.2708 }
         ];
 
-        // Responsive sizes
-        const pointSize = isMobile ? 0.5 : isTablet ? 0.7 : 1;
-        const countryPointSize = isMobile ? 0.4 : isTablet ? 0.6 : 0.8;
+        // Responsive sizes (rings / labels / HTML flags)
+        const flagWidthPx = isMobile ? 28 : isTablet ? 32 : 36;
+        const hqFlagWidthPx = isMobile ? 32 : isTablet ? 36 : 40;
         const ringMaxRadius = isMobile ? 4 : isTablet ? 6 : 8;
         const labelSize = isMobile ? 1.8 : isTablet ? 2.2 : 4.6;
-        const altitude = isMobile ? 1.5 : isTablet ? 2 : 2.2;
+        const altitude = isMobile ? 2.25 : isTablet ? 2 : 2.2;
 
-        // 🔴 Points (HQ + Countries) - brighter colors
-        globe.pointsData([
+        function flagCdnUrl(iso2) {
+            return 'https://flagcdn.com/w40/' + iso2 + '.png';
+        }
+
+        // ISO 3166-1 alpha-2 for flagcdn; Africa uses CF as rough match for the continent marker coords
+        const isoByCountryName = {
+            India: 'in',
+            Zimbabwe: 'zw',
+            USA: 'us',
+            UK: 'gb',
+            Africa: 'cf',
+            Austin: 'us',
+            Dubai: 'ae'
+        };
+
+        const flagMarkers = [
             {
                 lat: myLocation.lat,
                 lng: myLocation.lng,
-                size: pointSize,
-                color: '#00FFAA' // neon green (HQ)
+                flagUrl: flagCdnUrl('in'),
+                width: hqFlagWidthPx
             },
-            ...countries.map(c => ({
-                lat: c.lat,
-                lng: c.lng,
-                size: countryPointSize,
-                color: '#FF3D00' // bright orange-red
-            }))
-        ])
-            .pointAltitude(0.05) // lift points for visibility
-            .pointColor('color');
+            ...countries.map(function (c) {
+                var iso = isoByCountryName[c.name] || 'us';
+                return {
+                    lat: c.lat,
+                    lng: c.lng,
+                    flagUrl: flagCdnUrl(iso),
+                    width: flagWidthPx
+                };
+            })
+        ];
+
+        // Flag images (HTML/CSS2D) replace default cylinder "stick" points; pointer-events off so drag still rotates globe
+        globe
+            .htmlElementsData(flagMarkers)
+            .htmlAltitude(0.05)
+            .htmlElement(function (d) {
+                var el = document.createElement('div');
+                el.style.pointerEvents = 'none';
+                var img = document.createElement('img');
+                img.src = d.flagUrl;
+                img.alt = '';
+                img.style.width = d.width + 'px';
+                img.style.height = 'auto';
+                img.style.display = 'block';
+                img.style.borderRadius = '4px';
+                img.style.boxShadow = '0 1px 5px rgba(0,0,0,0.45)';
+                img.style.pointerEvents = 'none';
+                el.appendChild(img);
+                return el;
+            });
 
         // 💫 Stronger pulse rings (glow effect)
         globe.ringsData([
@@ -123,8 +162,8 @@
         controls.autoRotateSpeed = isMobile ? 2 : 3;
 
         // 🎯 Focus on center for mobile, HQ for larger screens
-        const focusLat = isMobile ? 0 : myLocation.lat;
-        const focusLng = isMobile ? 0 : myLocation.lng;
+        const focusLat = isMobile ? 8 : myLocation.lat;
+        const focusLng = isMobile ? 20 : myLocation.lng;
 
         globe.pointOfView(
             { lat: focusLat, lng: focusLng, altitude: altitude },
@@ -133,6 +172,10 @@
 
         // Handle window resize
         window.addEventListener('resize', () => {
+            globe
+                .width(window.innerWidth)
+                .height(window.innerHeight);
+
             const newIsMobile = window.innerWidth < 768;
             const newIsTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
 
@@ -142,18 +185,25 @@
         });
 
         // Wheel does not bubble from an iframe to the parent; forward so Flutter can scroll the page.
-        // capture + passive:false runs before three.js; drag (pointer) is unaffected.
+        // Send a lightweight string payload to avoid structured-clone conversion issues on Flutter web.
+        let wheelDyAccum = 0;
+        let wheelFlushScheduled = false;
         window.addEventListener('wheel', function (e) {
             if (window.parent === window) return;
-            try {
-                window.parent.postMessage({
-                    source: 'tds_globe',
-                    type: 'wheel',
-                    deltaY: e.deltaY,
-                    deltaX: e.deltaX,
-                    deltaMode: e.deltaMode
-                }, '*');
-            } catch (err) { }
+            wheelDyAccum += e.deltaY;
+            if (!wheelFlushScheduled) {
+                wheelFlushScheduled = true;
+                requestAnimationFrame(function () {
+                    wheelFlushScheduled = false;
+                    const dy = wheelDyAccum;
+                    wheelDyAccum = 0;
+                    if (!dy) return;
+                    try {
+                        // Format: tds_globe_wheel:<deltaY>
+                        window.parent.postMessage('tds_globe_wheel:' + dy, '*');
+                    } catch (err) { }
+                });
+            }
             e.preventDefault();
             e.stopImmediatePropagation();
         }, { capture: true, passive: false });
