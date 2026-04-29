@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
+import 'package:tds_voice_agent/core/open_external_url.dart';
 import 'package:tds_voice_agent/routing/app_routes.dart';
 
 class FooterSection extends StatelessWidget {
@@ -19,13 +20,11 @@ class FooterSection extends StatelessWidget {
 
   Gradient get gradText =>
       const LinearGradient(colors: [Color(0xFF5B6CFF), Color(0xFF8E44AD)]);
-
-  @override
+ @override
   Widget build(BuildContext context) {
     final links = [
       'Technodysis',
       'Nitya.AI',
-      'Careers',
       'LinkedIn',
       'Twitter',
       'hello@technodysis.com',
@@ -104,6 +103,28 @@ class FooterSection extends StatelessWidget {
 
   Widget _footerLink(String link) {
     final style = TextStyle(fontSize: 14, color: text3Color);
+    if (link == 'hello@technodysis.com') {
+      return Text(link, style: style);
+    }
+
+    const externalLinks = <String, String>{
+      'Technodysis': 'https://technodysis.com/',
+      'Nitya.AI': 'https://nitya.ai/',
+      'LinkedIn': 'https://in.linkedin.com/company/technodysis',
+      'Twitter': 'https://x.com/Technodysis1',
+    };
+    final externalUrl = externalLinks[link];
+    if (externalUrl != null) {
+      return InkWell(
+        onTap: () => openExternalUrlInNewTab(externalUrl),
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+          child: Text(link, style: style),
+        ),
+      );
+    }
+
     final route = AppRoutes.pathForFooterLink(link);
     if (route == null || onOpenRoute == null) {
       return Text(link, style: style);
