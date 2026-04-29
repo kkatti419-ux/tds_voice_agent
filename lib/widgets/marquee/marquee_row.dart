@@ -1,64 +1,94 @@
 import 'package:flutter/material.dart';
 
-class MarqueeRow extends StatefulWidget {
+/// Horizontal padding per label (left + right = 100 total)
+const double kMarqueeSegmentPadding = 100;
+
+/// Divider width between items
+const double kMarqueeDividerWidth = 3;
+
+/// Measures pixel width of ONE full repeating cycle
+/// (used for animation distance + duration sync)
+double measureMarqueeCycleWidth(
+  BuildContext context,
+  List<String> segment,
+  TextStyle textStyle,
+) {
+  if (segment.isEmpty) return 1;
+
+  final tp = TextPainter(
+    textDirection: TextDirection.ltr,
+    textScaler: MediaQuery.textScalerOf(context),
+  );
+
+  double total = 0;
+
+  for (final item in segment) {
+    tp.text = TextSpan(text: item, style: textStyle);
+    tp.layout();
+
+    total += tp.width;
+    total += kMarqueeSegmentPadding;
+    total += kMarqueeDividerWidth;
+  }
+
+  return total;
+}
+
+/// Infinite seamless marquee row
+class MarqueeRow extends StatelessWidget {
   final List<String> items;
+  final int cycleLength;
   final double progress;
   final TextStyle textStyle;
   final Color dividerColor;
+  final double cycleWidth;
 
   const MarqueeRow({
     super.key,
+    super.key,
     required this.items,
+    required this.cycleLength,
     required this.progress,
     required this.textStyle,
     required this.dividerColor,
+    required this.cycleWidth,
   });
 
   @override
-  State<MarqueeRow> createState() => _MarqueeRowState();
-}
-
-class _MarqueeRowState extends State<MarqueeRow> {
-  @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    assert(
+      cycleLength > 0 && items.length % cycleLength == 0,
+      'items length must be multiple of cycleLength',
+    );
 
-    final tp = TextPainter(textDirection: TextDirection.ltr);
-    double totalWidth = 0;
-
-    // Per segment: horizontal padding 50+50, divider width 3.
-    const double kSegmentPadding = 100;
-    const double kDividerWidth = 3;
-
-    for (final item in widget.items) {
-      tp.text = TextSpan(text: item, style: widget.textStyle);
-      tp.layout();
-      totalWidth += tp.width + kSegmentPadding + kDividerWidth;
-    }
-
-    // Start from right edge and move fully left
-    final offset = screenWidth - (widget.progress * (screenWidth + totalWidth));
+    final offset = -(progress * cycleWidth);
 
     return ClipRect(
-      child: Transform.translate(
-        offset: Offset(offset, -3),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const NeverScrollableScrollPhysics(),
+      child: OverflowBox(
+        alignment: Alignment.centerLeft,
+        minWidth: 0,
+        maxWidth: double.infinity,
+        child: Transform.translate(
+          offset: Offset(offset, 0),
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            children: widget.items.map((label) {
+            children: items.map((label) {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 50),
-                    child: Text(label, style: widget.textStyle),
+                    child: Text(
+                      label,
+                      style: textStyle,
+                      maxLines: 1,
+                      softWrap: false,
+                    ),
                   ),
                   Container(
                     height: 30,
-                    width: kDividerWidth,
-                    color: widget.dividerColor,
+                    width: kMarqueeDividerWidth,
+                    color: dividerColor,
                   ),
                 ],
               );

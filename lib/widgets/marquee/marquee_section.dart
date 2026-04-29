@@ -17,6 +17,8 @@ class _MarqueeSectionState extends State<MarqueeSection>
     with SingleTickerProviderStateMixin {
   late AnimationController _marqueeController;
 
+  static const double _pixelsPerSecond = 60;
+
   @override
   void initState() {
     super.initState();
@@ -24,7 +26,7 @@ class _MarqueeSectionState extends State<MarqueeSection>
     _marqueeController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 25),
-    )..repeat(); // infinite smooth loop
+    )..repeat();
   }
 
   @override
@@ -43,10 +45,19 @@ class _MarqueeSectionState extends State<MarqueeSection>
   Widget build(BuildContext context) {
     final safeItems = widget.items.isNotEmpty
         ? widget.items
-        : ["Google", "Amazon", "Meta", "Netflix"];
+        : ['Google', 'Amazon', 'Meta', 'Netflix'];
 
-    // duplicate for seamless scrolling
-    final doubled = [...safeItems, ...safeItems];
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final isMobile = viewportWidth < 600;
+
+    final textStyle = AppTypography.displaySmall(color: textPrimary);
+
+    final cycleWidth = measureMarqueeCycleWidth(context, safeItems, textStyle);
+
+    /// Dynamically repeat items based on screen width
+    final repeats = (viewportWidth / cycleWidth).ceil() + 3;
+
+    final repeatedItems = [for (int i = 0; i < repeats; i++) ...safeItems];
 
     final borderColor = widget.isDark
         ? AgniColors.oceanBright.withOpacity(0.15)
@@ -56,9 +67,24 @@ class _MarqueeSectionState extends State<MarqueeSection>
         ? const Color(0xFF050F20).withOpacity(0.65)
         : AgniColors.white.withOpacity(0.65);
 
+    final marqueeBandHeight = isMobile ? 50.0 : 62.0;
+    final verticalPadding = isMobile ? 32.0 : 48.0;
+    final headerFontSize = isMobile ? 10.0 : 12.0;
+
+    /// Sync animation speed with actual width
+    final durationMs = (cycleWidth / _pixelsPerSecond * 1000).round();
+
+    _marqueeController.duration = Duration(
+      milliseconds: durationMs.clamp(8000, 120000),
+    );
+
+    if (!_marqueeController.isAnimating) {
+      _marqueeController.repeat();
+    }
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 48),
+      padding: EdgeInsets.symmetric(vertical: verticalPadding),
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border.symmetric(
@@ -67,46 +93,53 @@ class _MarqueeSectionState extends State<MarqueeSection>
       ),
       child: Column(
         children: [
-          Text(
-            'TRUSTED BY 2,100+ BUSINESSES ACROSS 12 COUNTRIES',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 2,
-              color: textSecondary,
+          Align(
+            alignment: AlignmentGeometry.center,
+            child: Align(
+              alignment: Alignment.center,
+              child: Text(
+                'TRUSTED BY 2,100+ BUSINESSES ACROSS 12 COUNTRIES',
+                textAlign: TextAlign.center, // 🔥 important
+                style: TextStyle(
+                  fontSize: headerFontSize,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 2,
+                  color: textSecondary,
+                ),
+              ),
             ),
           ),
 
           const SizedBox(height: 28),
 
-          // Gradient edge fade effect (premium marquee look)
           ShaderMask(
             shaderCallback: (rect) {
-              return LinearGradient(
+              return const LinearGradient(
                 colors: [
-                  AgniColors.transparent,
-                  AgniColors.black,
-                  AgniColors.black,
-                  AgniColors.transparent,
+                  Colors.transparent,
+                  Colors.black,
+                  Colors.black,
+                  Colors.transparent,
                 ],
-                stops: const [0.0, 0.08, 0.92, 1.0],
+                stops: [0.0, 0.08, 0.92, 1.0],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ).createShader(rect);
             },
             blendMode: BlendMode.dstIn,
             child: SizedBox(
-              // height: 44,
+              height: marqueeBandHeight,
+              width: double.infinity,
               child: AnimatedBuilder(
                 animation: _marqueeController,
                 builder: (_, _) {
                   return MarqueeRow(
-                    items: doubled,
+                    items: repeatedItems,
+                    cycleLength: safeItems.length,
                     progress: _marqueeController.value,
-                    textStyle: AppTypography.displaySmall(
-                      color: textPrimary,
-                    ).copyWith(),
+                    textStyle: textStyle,
                     dividerColor: borderColor,
+                    cycleWidth: cycleWidth,
                   );
                 },
               ),

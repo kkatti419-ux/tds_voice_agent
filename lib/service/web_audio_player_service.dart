@@ -9,12 +9,15 @@ import 'package:universal_html/html.dart' as html;
 import 'web_audio_js_bridge_stub.dart'
     if (dart.library.html) 'web_audio_js_bridge_web.dart'
     as js_bridge;
+    if (dart.library.html) 'web_audio_js_bridge_web.dart'
+    as js_bridge;
 
 /// Console / DevTools filter: `VoiceAudio`
 const String _kLogName = 'VoiceAudio';
 
 /// Web [HTMLMediaElement.playbackRate] for TTS / URL playback (1.0 = normal).
-const double _kWebPlaybackRate = 1.2;
+/// +0.2 vs normal speed → 1.2×. Pitch preservation uses JS `preservesPitch` on audio elements before rate.
+const double _kWebPlaybackRate = 1.4;
 
 void _voiceAudioLog(String message) {
   debugPrint('[$_kLogName] $message');
@@ -75,12 +78,8 @@ class AudioPlayerService {
     final src = _activeBufferSource;
     _activeBufferSource = null;
     if (src == null) return;
-    try {
-      src.stop(0);
-    } catch (_) {}
-    try {
-      src.disconnect();
-    } catch (_) {}
+    js_bridge.audioBufferSourceStop(src, 0);
+    js_bridge.audioBufferSourceDisconnect(src);
   }
 
   /// [HTMLMediaElement.play] can reject with NotAllowedError until a user gesture;
@@ -282,6 +281,7 @@ class AudioPlayerService {
     }
 
     audio.loop = false;
+    js_bridge.mediaElementSetPreservesPitch(audio, true);
     audio.playbackRate = _kWebPlaybackRate;
 
     audio.onEnded.first.then((_) {
@@ -386,18 +386,26 @@ class AudioPlayerService {
       'playBytes pipeline id=$playId len=${bytes.length} mime=$mime header4=$head4',
     );
 
+    // Blob + `<audio>` uses preservesPitch + playbackRate (pitch-preserving where supported).
+    // Decode + AudioBufferSourceNode cannot preserve pitch at non-1.0 rate; use blob first.
+    try {
+      await _playWebBytesBlob(bytes, playId: playId);
+      _voiceAudioLogPrint(
+        'playBytes BLOB_PATH_DONE id=$playId elapsedMs=${sw.elapsedMilliseconds}',
+      );
+      return;
+    } catch (e) {
+      _voiceAudioLog('playBytes id=$playId blob failed ($e) → decode fallback');
+    }
+
     if (await _tryPlayWebBytesDecode(bytes, playId: playId)) {
       _voiceAudioLogPrint(
-        'playBytes DECODE_PATH_OK id=$playId elapsedMs=${sw.elapsedMilliseconds}',
+        'playBytes DECODE_FALLBACK_OK id=$playId elapsedMs=${sw.elapsedMilliseconds}',
       );
       return;
     }
-    _voiceAudioLog(
-      'playBytes id=$playId decode skipped/failed → blob fallback',
-    );
-    await _playWebBytesBlob(bytes, playId: playId);
-    _voiceAudioLogPrint(
-      'playBytes BLOB_PATH_DONE id=$playId elapsedMs=${sw.elapsedMilliseconds}',
+    throw StateError(
+      'playBytes failed id=$playId (blob threw and decode failed)',
     );
   }
 
@@ -433,9 +441,13 @@ class AudioPlayerService {
       final done = Completer<void>();
       _activePlaybackCompleter = done;
 
-      final src = ctx.createBufferSource() as dynamic;
-      src.buffer = audioBuf;
-      src.connect(ctx.destination);
+      final src = js_bridge.audioContextCreateBufferSource(ctx);
+      if (src == null) {
+        _voiceAudioLog('decode id=$playId: createBufferSource returned null');
+        return false;
+      }
+      js_bridge.audioBufferSourceSetBuffer(src, audioBuf as Object?);
+      js_bridge.audioBufferSourceConnectToContextDestination(src, ctx);
       _activeBufferSource = src;
 
       js_bridge.setBufferSourceOnEnded(src, () {
@@ -448,7 +460,7 @@ class AudioPlayerService {
         }
       });
 
-      src.start(0);
+      js_bridge.audioBufferSourceStart(src, 0);
       _voiceAudioLogPrint(
         'WebAudio BUFFER_PLAYING id=$playId inLen=${bytes.length} '
         'decodeMs=${decodeSw.elapsedMilliseconds}',
@@ -479,6 +491,7 @@ class AudioPlayerService {
     final audio = html.AudioElement(url);
     _webAudio = audio;
     audio.loop = false;
+    js_bridge.mediaElementSetPreservesPitch(audio, true);
     audio.playbackRate = _kWebPlaybackRate;
     try {
       audio.setAttribute('playsinline', 'true');

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Drives [MaterialApp.themeMode]; toggled from the landing navbar/drawer.
 class ThemeModeNotifier extends ChangeNotifier {
-  ThemeMode _mode = ThemeMode.dark;
+  ThemeMode _mode = ThemeMode.light;
 
   ThemeMode get themeMode => _mode;
 

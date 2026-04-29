@@ -55,13 +55,61 @@ Future<Object?> resumeAudioContextPromise(dynamic ctx) async {
 dynamic createAudioContextOrNull() {
   try {
     final g = js_util.globalThis;
-    final ctor = js_util.getProperty(g, 'AudioContext') ??
+    final ctor =
+        js_util.getProperty(g, 'AudioContext') ??
         js_util.getProperty(g, 'webkitAudioContext');
     if (ctor == null) return null;
     return js_util.callConstructor(ctor, const <Object>[]);
   } catch (_) {
     return null;
   }
+}
+
+/// Raw JS `AudioContext.createBufferSource()` call.
+dynamic audioContextCreateBufferSource(dynamic audioContext) {
+  return js_util.callMethod<Object?>(
+    audioContext,
+    'createBufferSource',
+    const <Object>[],
+  );
+}
+
+void audioBufferSourceSetBuffer(dynamic src, Object? audioBuffer) {
+  js_util.setProperty(src, 'buffer', audioBuffer);
+}
+
+void audioBufferSourceConnectToContextDestination(
+  dynamic src,
+  dynamic audioContext,
+) {
+  final destination = js_util.getProperty(audioContext, 'destination');
+  js_util.callMethod<Object?>(src, 'connect', <Object?>[destination]);
+}
+
+void audioBufferSourceStart(dynamic src, double when) {
+  js_util.callMethod<Object?>(src, 'start', <Object?>[when]);
+}
+
+void audioBufferSourceStop(dynamic src, double when) {
+  try {
+    js_util.callMethod<Object?>(src, 'stop', <Object?>[when]);
+  } catch (_) {}
+}
+
+void audioBufferSourceDisconnect(dynamic src) {
+  try {
+    js_util.callMethod<Object?>(src, 'disconnect', const <Object>[]);
+  } catch (_) {}
+}
+
+/// [HTMLMediaElement.preservesPitch] — when true, [playbackRate] changes may keep pitch (browser-dependent).
+void mediaElementSetPreservesPitch(dynamic mediaElement, bool preserve) {
+  try {
+    js_util.setProperty(mediaElement, 'preservesPitch', preserve);
+  } catch (_) {}
+  try {
+    js_util.setProperty(mediaElement, 'webkitPreservesPitch', preserve);
+  } catch (_) {}
 }
 
 /// Calls `HTMLMediaElement.play()` through JS and awaits a real Promise only.

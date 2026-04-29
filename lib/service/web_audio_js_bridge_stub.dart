@@ -13,4 +13,21 @@ Future<Object?> resumeAudioContextPromise(dynamic ctx) async {
 
 dynamic createAudioContextOrNull() => null;
 
+dynamic audioContextCreateBufferSource(dynamic audioContext) => null;
+
+void audioBufferSourceSetBuffer(dynamic src, Object? audioBuffer) {}
+
+void audioBufferSourceConnectToContextDestination(
+  dynamic src,
+  dynamic audioContext,
+) {}
+
+void audioBufferSourceStart(dynamic src, double when) {}
+
+void audioBufferSourceStop(dynamic src, double when) {}
+
+void audioBufferSourceDisconnect(dynamic src) {}
+
+void mediaElementSetPreservesPitch(dynamic mediaElement, bool preserve) {}
+
 Future<void> playMediaElement(Object audioElement) async {}

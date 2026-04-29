@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:tds_voice_agent/model/agni_content.dart';
 import 'package:tds_voice_agent/routing/app_routes.dart';
 import 'package:tds_voice_agent/theme/theme_mode_notifier.dart';
-import 'package:tds_voice_agent/widgets/earth/earth_section.dart';
+import 'package:tds_voice_agent/widgets/earth/earth_section.dart'
+    show EarthSection, LangItem;
 import 'package:tds_voice_agent/widgets/feature/features_section.dart';
 import 'package:tds_voice_agent/widgets/footer_section.dart';
 import 'package:tds_voice_agent/widgets/hero_section.dart';
@@ -14,72 +15,21 @@ import 'package:tds_voice_agent/widgets/background_painters.dart';
 import 'package:tds_voice_agent/widgets/stats/stats_section.dart';
 
 import '../core/agni_colors.dart';
+import 'package:tds_voice_agent/data/datasources/local_content_data_source.dart';
+import 'package:tds_voice_agent/model/agni_content.dart';
 import '../theme/app_typography.dart';
 
 class VoiceScreen extends StatelessWidget {
   const VoiceScreen({super.key});
 
-  static final AgniContent _defaultContent = AgniContent(
-    navItems: const ['Solutions', 'Industries', 'Platform', 'Pricing'],
-    marqueeItems: const ['AI Agents', 'Voice Bots', 'Automation', 'Analytics'],
-    heroLangs: const ['English', 'Hindi', 'Tamil', 'Kannada'],
-    tickerTags: const ['Healthcare', 'Banking', 'Retail', 'Telecom'],
-    stats: [
-      StatItem(value: '99.9%', description: 'Uptime'),
-      StatItem(value: '24/7', description: 'Always on support'),
-      StatItem(value: '10x', description: 'Faster operations'),
-    ],
-    features: const [
-      FeatureItem(
-        '🤖',
-        'Agentic AI',
-        'Autonomous enterprise workflows.',
-        'Live',
-      ),
-      FeatureItem(
-        '🎙',
-        'Voice',
-        'Multilingual speech interactions.',
-        'Realtime',
-      ),
-      FeatureItem(
-        '⚙️',
-        'Automation',
-        'End-to-end process automation.',
-        'Secure',
-      ),
-    ],
-    comparisons: const [
-      ComparisonCardData(
-        isOurs: true,
-        badge: 'Technodysis',
-        headline: 'Built for enterprise scale.',
-        items: ['Low latency', 'Multilingual', 'Barge-in support'],
-      ),
-      ComparisonCardData(
-        isOurs: false,
-        badge: 'Others',
-        headline: 'General chatbot stacks.',
-        items: ['Higher latency', 'Limited voice', 'Poor interruption'],
-      ),
-    ],
-    langPills: [
-      LangPill('English', 'ocean'),
-      LangPill('Hindi', 'forest'),
-      LangPill('Tamil', ''),
-    ],
-    floatingCards: const [
-      FloatingCardData('100K+', 'Daily calls', 1.0),
-      FloatingCardData('\$0.03/min', 'Voice cost', 2.2),
-    ],
-  );
+  static final _content = LocalContentDataSource().load();
 
   @override
   Widget build(BuildContext context) {
     final isDark =
         context.watch<ThemeModeNotifier>().themeMode == ThemeMode.dark;
     return AgniLandingPage(
-      content: _defaultContent,
+      content: _content,
       isDark: isDark,
       onToggleTheme: () => context.read<ThemeModeNotifier>().toggle(),
     );
@@ -314,7 +264,8 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                           isDark: isDark,
                         ),
                         // _buildStats(),
-                        StatsSection(isDark: isDark, stats: content.stats),
+                        StatsSection(isDark: false, stats: content.stats),
+                        FeaturesSection(content: content, isDark: isDark),
                         ComparisonsSection(
                           comparisons: content.comparisons,
                           isDark: isDark,
@@ -322,11 +273,12 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                           text2Color: text2Color,
                           text3Color: text3Color,
                         ),
-                        FeaturesSection(
-                          features: content.features,
+                        EarthSection(
+                          langPills: content.langPills
+                              .map((p) => LangItem(p.label, p.type))
+                              .toList(),
                           isDark: isDark,
                         ),
-                        EarthSection(langPills: [], isDark: isDark),
                         // CTABanner(isDark: isDark),
                         // _buildFooter(),
                         FooterSection(
