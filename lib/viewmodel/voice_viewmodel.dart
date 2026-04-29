@@ -294,7 +294,7 @@ class VoiceViewModel extends ChangeNotifier {
       final idleHint = kIsWeb
           ? ' · idle ${ListeningIdlePolicy.idleNoSpeech.inSeconds}s → ping server'
           : '';
-      return 'Listening… (turn ends when the assistant finishes)$idleHint';
+      return 'Listening…';
     }
     if (isProcessing) return 'Agent is responding…';
     if (isAgentSpeaking) return 'Agent speaking… (speak to interrupt)';

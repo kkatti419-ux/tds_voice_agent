@@ -12,6 +12,9 @@ class ResponsiveNavbar extends StatelessWidget {
   /// Pushes a named [AppRoutes] path (e.g. [AppRoutes.solutions]).
   final void Function(String route)? onOpenRoute;
 
+  /// When set, **Contact sales** opens this (same as hero **Talk to an expert**) instead of [AppRoutes.contactSales].
+  final VoidCallback? onContactSales;
+
   const ResponsiveNavbar({
     super.key,
     required this.isDark,
@@ -19,6 +22,7 @@ class ResponsiveNavbar extends StatelessWidget {
     required this.onToggleTheme,
     this.onMenuTap,
     this.onOpenRoute,
+    this.onContactSales,
   });
 
   @override
@@ -130,10 +134,17 @@ class ResponsiveNavbar extends StatelessWidget {
       ),
     );
 
-    if (onOpenRoute == null) return child;
+    final canTap = onContactSales != null || onOpenRoute != null;
+    if (!canTap) return child;
 
     return InkWell(
-      onTap: () => onOpenRoute!(AppRoutes.contactSales),
+      onTap: () {
+        if (onContactSales != null) {
+          onContactSales!();
+          return;
+        }
+        onOpenRoute!(AppRoutes.contactSales);
+      },
       borderRadius: BorderRadius.circular(24),
       child: child,
     );

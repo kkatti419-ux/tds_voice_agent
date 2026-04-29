@@ -60,7 +60,7 @@ class ComparisonsSection extends StatelessWidget {
                           left: comp != comparisons.first ? 12 : 0,
                         ),
                         child: AspectRatio(
-                          aspectRatio: 1,
+                          aspectRatio: 1.4,
                           child: ComparisonCard(
                             isOurs: comp.isOurs,
                             badge: comp.badge,

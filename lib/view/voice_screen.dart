@@ -9,6 +9,7 @@ import 'package:tds_voice_agent/widgets/feature/features_section.dart';
 import 'package:tds_voice_agent/widgets/footer_section.dart';
 import 'package:tds_voice_agent/widgets/hero_section.dart';
 import 'package:tds_voice_agent/widgets/marquee/marquee_section.dart';
+import 'package:tds_voice_agent/widgets/contact_form_dialog.dart';
 import 'package:tds_voice_agent/widgets/responsive_navbar.dart';
 import 'package:tds_voice_agent/widgets/comparisons_section.dart';
 import 'package:tds_voice_agent/widgets/background_painters.dart';
@@ -171,9 +172,7 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                       child: InkWell(
                         onTap: () {
                           Navigator.of(context).pop();
-                          Navigator.of(
-                            context,
-                          ).pushNamed(AppRoutes.contactSales);
+                          showContactFormDialog(context, isDark: isDark);
                         },
                         borderRadius: BorderRadius.circular(24),
                         child: Container(
@@ -241,6 +240,8 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                   navItems: content.navItems,
                   onToggleTheme: widget.onToggleTheme,
                   onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+                  onContactSales: () =>
+                      showContactFormDialog(context, isDark: isDark),
                   onOpenRoute: (route) {
                     Navigator.of(context).pushNamed(route);
                   },

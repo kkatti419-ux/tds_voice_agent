@@ -16,7 +16,7 @@ const String _kLogName = 'VoiceAudio';
 
 /// Web [HTMLMediaElement.playbackRate] for TTS / URL playback (1.0 = normal).
 /// +0.2 vs normal speed → 1.2×. Pitch preservation uses JS `preservesPitch` on audio elements before rate.
-const double _kWebPlaybackRate = 1.4;
+const double _kWebPlaybackRate = 1.3;
 
 void _voiceAudioLog(String message) {
   debugPrint('[$_kLogName] $message');

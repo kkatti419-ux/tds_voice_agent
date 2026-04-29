@@ -140,6 +140,23 @@
                 location.reload(); // Simple way to reapply responsive settings
             }
         });
+
+        // Wheel does not bubble from an iframe to the parent; forward so Flutter can scroll the page.
+        // capture + passive:false runs before three.js; drag (pointer) is unaffected.
+        window.addEventListener('wheel', function (e) {
+            if (window.parent === window) return;
+            try {
+                window.parent.postMessage({
+                    source: 'tds_globe',
+                    type: 'wheel',
+                    deltaY: e.deltaY,
+                    deltaX: e.deltaX,
+                    deltaMode: e.deltaMode
+                }, '*');
+            } catch (err) { }
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }, { capture: true, passive: false });
     </script>
 
 </body>
