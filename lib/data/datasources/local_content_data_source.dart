@@ -3,11 +3,12 @@ import 'package:tds_voice_agent/model/agni_content.dart';
 /// Static landing copy and lists (ported from technodysis_web local datasource).
 class LocalContentDataSource {
   AgniContent load() {
-    const navItems = [
-      'Solutions',
-      'Industries',
-      'Platform',
-      'Pricing',
+    // Header nav links temporarily hidden (restore when routes/screens exist).
+    const navItems = <String>[
+      // 'Solutions',
+      // 'Industries',
+      // 'Platform',
+      // 'Pricing',
     ];
 
     const marqueeItems = [

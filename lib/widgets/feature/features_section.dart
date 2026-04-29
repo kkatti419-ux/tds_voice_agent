@@ -61,7 +61,7 @@ class FeaturesSection extends StatelessWidget {
               return width > 600
                   ? SizedBox(
                       width: w,
-                      height: w,
+                      height: w-100,
                       child: FeatureCard(item: f, isDark: isDark),
                     )
                   : SizedBox(

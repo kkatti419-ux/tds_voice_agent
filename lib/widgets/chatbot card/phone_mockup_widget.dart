@@ -543,25 +543,9 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 16,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      width: 80,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AgniColors.oceanBright.withOpacity(0.15)
-                            : AgniColors.oceanMid.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                    ),
-                  ),
-                ),
                 SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(14, 40, 14, 20),
+                  
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
