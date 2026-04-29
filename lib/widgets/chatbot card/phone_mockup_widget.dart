@@ -543,63 +543,66 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
                     ),
                   ),
                 ),
-                SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(14, 40, 14, 20),
-                  
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (vm.isOffline) _offlineStrip(),
-                      if (vm.micBlockedMessage != null) _micBlockedStrip(vm),
-                      if (vm.presenceCheckSent) _presenceCheckInStrip(vm),
-                      _statusLabel(vm.statusText),
-                      const SizedBox(height: 10),
-                      Center(child: _talkingAvatar()),
-                      const SizedBox(height: 14),
-                      Center(child: _waveform(vm)),
-                      if (_langs.isNotEmpty) ...[
-                        const SizedBox(height: 20),
-                        AnimatedOpacity(
-                          duration: const Duration(milliseconds: 400),
-                          opacity: _langOpacity,
-                          child: AnimatedContainer(
+                ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context)
+                      .copyWith(scrollbars: false),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(14, 40, 14, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (vm.isOffline) _offlineStrip(),
+                        if (vm.micBlockedMessage != null) _micBlockedStrip(vm),
+                        if (vm.presenceCheckSent) _presenceCheckInStrip(vm),
+                        _statusLabel(vm.statusText),
+                        const SizedBox(height: 10),
+                        Center(child: _talkingAvatar()),
+                        const SizedBox(height: 14),
+                        Center(child: _waveform(vm)),
+                        if (_langs.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          AnimatedOpacity(
                             duration: const Duration(milliseconds: 400),
-                            transform: Matrix4.translationValues(
-                              0,
-                              _langOffset,
-                              0,
-                            ),
-                            child: Text(
-                              _langs[_langIndex],
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.playfairDisplay(
-                                fontSize: 27.2,
-                                fontWeight: FontWeight.w700,
-                                color: textColor,
+                            opacity: _langOpacity,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 400),
+                              transform: Matrix4.translationValues(
+                                0,
+                                _langOffset,
+                                0,
+                              ),
+                              child: Text(
+                                _langs[_langIndex],
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.playfairDisplay(
+                                  fontSize: 27.2,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
                               ),
                             ),
                           ),
+                          const SizedBox(height: 8),
+                        ],
+                        Text(
+                          'Agentic copilots · 24/7 uptime',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.dmMono(
+                            fontSize: 12.48,
+                            color: text3Color,
+                          ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 16),
+                        _pricingCard(),
+                        if (vm.showContinueButtons) ...[
+                          const SizedBox(height: 12),
+                          _continueButtons(vm),
+                        ],
+                        const SizedBox(height: 16),
+                        Center(child: _micButton(vm)),
                       ],
-                      Text(
-                        'Agentic copilots · 24/7 uptime',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.dmMono(
-                          fontSize: 12.48,
-                          color: text3Color,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _pricingCard(),
-                      if (vm.showContinueButtons) ...[
-                        const SizedBox(height: 12),
-                        _continueButtons(vm),
-                      ],
-                      const SizedBox(height: 16),
-                      Center(child: _micButton(vm)),
-                    ],
+                    ),
                   ),
                 ),
               ],

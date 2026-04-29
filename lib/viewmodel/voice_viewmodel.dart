@@ -235,7 +235,7 @@ class VoiceViewModel extends ChangeNotifier {
   void _onMicCaptureError(String message) {
     if (!kIsWeb) return;
     _micBlockedMessage =
-        'Microphone access blocked (${message.trim()}). To allow: use the lock or site settings icon in the address bar → Microphone → Allow. Safari (iOS): Settings → Safari → Microphone, or the “AA” menu → Website Settings.';
+        'Microphone access blocked (${message.trim()}). In Chrome: click the lock or tune icon left of the address bar → Site settings → Microphone → Allow. Or Chrome menu (⋮) → Settings → Privacy and security → Site settings → Microphone.';
     notifyListeners();
   }
 
