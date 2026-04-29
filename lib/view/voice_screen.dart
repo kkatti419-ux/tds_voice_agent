@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tds_voice_agent/model/agni_content.dart';
 import 'package:tds_voice_agent/routing/app_routes.dart';
 import 'package:tds_voice_agent/theme/theme_mode_notifier.dart';
-import 'package:tds_voice_agent/widgets/earth/earth_section.dart' show EarthSection, LangItem;
+import 'package:tds_voice_agent/widgets/earth/earth_section.dart'
+    show EarthSection, LangItem;
 import 'package:tds_voice_agent/widgets/feature/features_section.dart';
 import 'package:tds_voice_agent/widgets/footer_section.dart';
 import 'package:tds_voice_agent/widgets/hero_section.dart';
@@ -25,7 +27,8 @@ class VoiceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark =
+        context.watch<ThemeModeNotifier>().themeMode == ThemeMode.dark;
     return AgniLandingPage(
       content: _content,
       isDark: isDark,
@@ -165,7 +168,7 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Material(
-                      color: AgniColors.transparent,
+                      color: Colors.transparent,
                       child: InkWell(
                         onTap: () {
                           Navigator.of(context).pop();
@@ -188,7 +191,9 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                           alignment: Alignment.center,
                           child: Text(
                             'Contact sales →',
-                            style: AppTypography.ctaCompact(color: AgniColors.white),
+                            style: AppTypography.ctaCompact(
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -267,14 +272,8 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                           isDark: isDark,
                         ),
                         // _buildStats(),
-                        StatsSection(
-                          isDark: false,
-                          stats: content.stats,
-                        ),
-                        FeaturesSection(
-                          content: content,
-                          isDark: isDark,
-                        ),
+                        StatsSection(isDark: false, stats: content.stats),
+                        FeaturesSection(content: content, isDark: isDark),
                         ComparisonsSection(
                           comparisons: content.comparisons,
                           isDark: isDark,
@@ -284,9 +283,7 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                         ),
                         EarthSection(
                           langPills: content.langPills
-                              .map(
-                                (p) => LangItem(p.label, p.type),
-                              )
+                              .map((p) => LangItem(p.label, p.type))
                               .toList(),
                           isDark: isDark,
                         ),
@@ -316,12 +313,10 @@ class _AgniLandingPageState extends State<AgniLandingPage>
     return Positioned.fill(
       child: AnimatedBuilder(
         animation: _globeController,
-        builder: (_, __) => CustomPaint(
+        builder: (_, _) => CustomPaint(
           painter: BackgroundPainter(isDark: isDark, t: _globeController.value),
         ),
       ),
     );
   }
 }
-
-

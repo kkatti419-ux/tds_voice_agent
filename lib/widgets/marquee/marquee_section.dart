@@ -132,7 +132,7 @@ class _MarqueeSectionState extends State<MarqueeSection>
               width: double.infinity,
               child: AnimatedBuilder(
                 animation: _marqueeController,
-                builder: (_, __) {
+                builder: (_, _) {
                   return MarqueeRow(
                     items: repeatedItems,
                     cycleLength: safeItems.length,

@@ -143,10 +143,10 @@ class StatCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.displaySmall(color: AgniColors.white)
                       .copyWith(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
+                        fontSize: 36,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
                 ),
               ),
               const SizedBox(height: 6),

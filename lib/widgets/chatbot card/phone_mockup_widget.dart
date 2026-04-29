@@ -269,13 +269,10 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
     );
   }
 
-  bool _isWaveActive(VoiceViewModel vm) =>
-      vm.isListening || vm.isAgentSpeaking;
+  bool _isWaveActive(VoiceViewModel vm) => vm.isListening || vm.isAgentSpeaking;
 
   Widget _waveform(VoiceViewModel vm) {
-    final heights = [
-      20.0, 36.0, 48.0, 28.0, 40.0, 24.0, 44.0, 32.0, 20.0,
-    ];
+    final heights = [20.0, 36.0, 48.0, 28.0, 40.0, 24.0, 44.0, 32.0, 20.0];
     final delays = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
     return AnimatedBuilder(
       animation: _waveController,
@@ -463,9 +460,7 @@ class _VoicePhoneWidgetState extends State<VoicePhoneWidget>
           borderRadius: BorderRadius.circular(100),
           boxShadow: [
             BoxShadow(
-              color: AgniColors.oceanBright.withOpacity(
-                isDark ? 0.35 : 0.28,
-              ),
+              color: AgniColors.oceanBright.withOpacity(isDark ? 0.35 : 0.28),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),

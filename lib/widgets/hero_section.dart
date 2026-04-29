@@ -125,10 +125,7 @@ class _HeroSectionState extends State<HeroSection>
                         const SizedBox(height: 24),
                         _buildButtons(isMobile: isMobile),
                         const SizedBox(height: 32),
-                        VoicePhoneWidget(
-                          isDark: isDark,
-                          heroLangs: _langs,
-                        ),
+                        VoicePhoneWidget(isDark: isDark, heroLangs: _langs),
                       ],
                     ),
                   ),
@@ -225,7 +222,7 @@ class _HeroSectionState extends State<HeroSection>
   Widget _buildPulseDot() {
     return AnimatedBuilder(
       animation: _globeController,
-      builder: (_, __) {
+      builder: (_, _) {
         final t = _globeController.value;
         final scale = 1.0 + (t - 0.5).abs() * 0.8;
         final opacity = 1.0 - (t - 0.5).abs() * 1.2;
@@ -266,7 +263,7 @@ class _HeroSectionState extends State<HeroSection>
       children: tags.asMap().entries.map((e) {
         return AnimatedBuilder(
           animation: _floatController,
-          builder: (_, __) {
+          builder: (_, _) {
             final delay = e.key * 0.4;
             final t = ((_floatController.value + delay) % 1.0);
             final offset = math.sin(t * math.pi * 2) * 7;
@@ -357,7 +354,11 @@ class _HeroSectionState extends State<HeroSection>
     );
   }
 
-  Widget _gradientButton(String label, {bool small = false, VoidCallback? onTap}) {
+  Widget _gradientButton(
+    String label, {
+    bool small = false,
+    VoidCallback? onTap,
+  }) {
     final child = Container(
       alignment: Alignment.center,
       padding: EdgeInsets.symmetric(
@@ -378,7 +379,7 @@ class _HeroSectionState extends State<HeroSection>
       child: Text(
         label,
         style: TextStyle(
-                      color: AgniColors.white,
+          color: AgniColors.white,
           fontSize: small ? 14 : 16,
           fontWeight: FontWeight.w600,
         ),
