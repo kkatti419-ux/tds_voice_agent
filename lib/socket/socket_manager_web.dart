@@ -43,7 +43,7 @@ class SocketManager {
   final List<Uint8List> _pendingBinary = [];
 
   int _jsonInCount = 0;
-  int _binaryInCount = 0;
+  int _binaryInCount = 0; 
   int _binaryRxBytesTotal = 0;
   int _textOutCount = 0;
   int _binaryOutCount = 0;
