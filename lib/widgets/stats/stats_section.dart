@@ -35,22 +35,24 @@ class StatsSection extends StatelessWidget {
                   .toList(),
             );
           } else {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: stats
-                  .map(
-                    (s) => Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: StatCard(
-                          value: s.value,
-                          description: s.description,
-                          isDark: isDark,
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: stats
+                    .map(
+                      (s) => Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: StatCard(
+                            value: s.value,
+                            description: s.description,
+                            isDark: isDark,
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                  .toList(),
+                    )
+                    .toList(),
+              ),
             );
           }
         },

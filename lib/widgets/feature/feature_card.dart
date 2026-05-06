@@ -61,12 +61,10 @@ class FeatureCard extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          /// 🔹 Description
+          /// 🔹 Description (multi-line; no fixed parent height)
           Text(
             item.description,
             style: TextStyle(fontSize: 14, color: text3Color, height: 1.6),
-            maxLines: 6,
-            overflow: TextOverflow.ellipsis,
           ),
 
           const SizedBox(height: 16),

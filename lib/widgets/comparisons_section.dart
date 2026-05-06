@@ -49,18 +49,17 @@ class ComparisonsSection extends StatelessWidget {
                   .toList(),
             );
           } else {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: comparisons
-                  .map(
-                    (comp) => Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          right: comp == comparisons.first ? 12 : 0,
-                          left: comp != comparisons.first ? 12 : 0,
-                        ),
-                        child: AspectRatio(
-                          aspectRatio: 1.4,
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: comparisons
+                    .map(
+                      (comp) => Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            right: comp == comparisons.first ? 12 : 0,
+                            left: comp != comparisons.first ? 12 : 0,
+                          ),
                           child: ComparisonCard(
                             isOurs: comp.isOurs,
                             badge: comp.badge,
@@ -73,9 +72,9 @@ class ComparisonsSection extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ),
-                  )
-                  .toList(),
+                    )
+                    .toList(),
+              ),
             );
           }
         },

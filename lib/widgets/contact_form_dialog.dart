@@ -42,7 +42,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
   final descController = TextEditingController();
   bool submitted = false;
 
-  bool get _dialogIsLight => widget.isDark;
+  bool get _dialogIsLight => !widget.isDark;
   Color get _dialogBg => _dialogIsLight
       ? const Color(0xFFF0F7FF)
       : const Color(0xFF08162A).withOpacity(0.95);
@@ -134,156 +134,254 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screen = MediaQuery.sizeOf(context);
+    final isMobile = screen.width < 600;
+    final compact = isMobile || screen.height < 720;
+    final dialogWidth = isMobile ? screen.width - 24 : 620.0;
+    final viewInsets = MediaQuery.viewInsetsOf(context);
+
     return Dialog(
       backgroundColor: Colors.transparent,
-      child: Container(
-        width: 420,
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: _dialogBg,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: _dialogBorderColor),
-          boxShadow: [
-            BoxShadow(
-              color: _dialogShadowColor,
-              blurRadius: 40,
-              spreadRadius: 2,
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 24,
+        vertical: isMobile ? 12 : 24,
+      ),
+      child: AnimatedPadding(
+        padding: EdgeInsets.only(bottom: viewInsets.bottom),
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: dialogWidth),
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(compact ? 16 : 28),
+            decoration: BoxDecoration(
+              color: _dialogBg,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: _dialogBorderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: _dialogShadowColor,
+                  blurRadius: 40,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
-          ],
+            child: submitted
+                ? _successView(compact: compact)
+                : _formView(compact: compact),
+          ),
         ),
-        child: submitted ? _successView() : _formView(),
       ),
     );
   }
 
-  Widget _successView() {
+  Widget _successView({required bool compact}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.check_circle, color: Color(0xFF52B788), size: 60),
-        const SizedBox(height: 16),
+        Icon(
+          Icons.check_circle,
+          color: const Color(0xFF52B788),
+          size: compact ? 48 : 60,
+        ),
+        SizedBox(height: compact ? 12 : 16),
         Text(
           "You're all set!",
           style: TextStyle(
-            fontSize: 22,
+            fontSize: compact ? 20 : 22,
             fontWeight: FontWeight.bold,
             color: _titleColor,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: compact ? 8 : 10),
         Text(
           'Someone will get in touch with you shortly.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: _subtitleColor, height: 1.5),
+          style: TextStyle(
+            color: _subtitleColor,
+            height: 1.45,
+            fontSize: compact ? 13 : 14,
+          ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: compact ? 18 : 24),
         _gradientButton('Close', () async {
           Navigator.of(context).pop();
-        }),
+        }, compact: compact),
       ],
     );
   }
 
-  Widget _formView() {
+  Widget _formView({required bool compact}) {
+    final gapL = compact ? 10.0 : 14.0;
+    final gapM = compact ? 8.0 : 12.0;
+    final afterHeader = compact ? 16.0 : 24.0;
+    final descLines = compact ? 2 : 3;
+    final addrSize = compact ? 11.0 : 13.0;
+    final labelSize = compact ? 11.0 : 12.0;
+
     return Form(
       key: _formKey,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Row(
+            children: [
+              const Spacer(),
+              InkWell(
+                onTap: () => Navigator.of(context).pop(),
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                  width: compact ? 30 : 32,
+                  height: compact ? 30 : 32,
+                  decoration: BoxDecoration(
+                    color: _fieldFill,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _enabledBorderColor),
+                  ),
+                  child: Icon(
+                    Icons.close,
+                    size: compact ? 16 : 18,
+                    color: _inputTextColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: compact ? 2 : 4),
           Text(
             'Talk to an Expert',
             style: TextStyle(
-              fontSize: 22,
+              fontSize: compact ? 19 : 22,
               fontWeight: FontWeight.bold,
               color: _titleColor,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: compact ? 4 : 6),
           Text(
             "We'll reach out within 24 hours",
-            style: TextStyle(color: _subtitleColor),
+            style: TextStyle(
+              color: _subtitleColor,
+              fontSize: compact ? 12.5 : 14,
+            ),
           ),
-          const SizedBox(height: 24),
-          _inputField('Full Name', nameController, validator: _validateName),
-          const SizedBox(height: 14),
+          SizedBox(height: afterHeader),
+          _inputField(
+            'Full Name',
+            nameController,
+            validator: _validateName,
+            compact: compact,
+          ),
+          SizedBox(height: gapL),
           _inputField(
             'Phone Number',
             phoneController,
             keyboard: TextInputType.phone,
             validator: _validatePhone,
+            compact: compact,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: gapL),
           _inputField(
             'Email Address',
             emailController,
             keyboard: TextInputType.emailAddress,
             validator: _validateEmail,
+            compact: compact,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: gapM),
           TextFormField(
             controller: descController,
-            maxLines: 3,
-            style: TextStyle(color: _inputTextColor),
+            maxLines: descLines,
+            style: TextStyle(
+              color: _inputTextColor,
+              fontSize: compact ? 14 : 16,
+            ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Description is required';
               }
               return null;
             },
-            decoration: _decoration('Description'),
+            decoration: _decoration('Description', compact: compact),
           ),
           if (widget.showSalesOfficeAddress) ...[
-            const SizedBox(height: 14),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Company contact',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _subtitleColor,
+            SizedBox(height: compact ? 10 : 14),
+            if (!compact) ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Company contact',
+                  style: TextStyle(
+                    fontSize: labelSize,
+                    fontWeight: FontWeight.w600,
+                    color: _subtitleColor,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerLeft,
-
-              child: Text(
-                'sales@technodysis.com',
-                style: TextStyle(
-                  color: _subtitleColor,
-                  height: 1.45,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+              SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'sales@technodysis.com',
+                  style: TextStyle(
+                    color: _subtitleColor,
+                    height: 1.35,
+                    fontSize: addrSize,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Office address',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _subtitleColor,
+              SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Office address',
+                  style: TextStyle(
+                    fontSize: labelSize,
+                    fontWeight: FontWeight.w600,
+                    color: _subtitleColor,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Subramanya Arcade\n'
-              'Bannerghatta Rd, OLd Gurappanapalya, BTM 1st Stage, Bengaluru, Karnataka 560029, India',
-              style: TextStyle(
-                color: _subtitleColor,
-                height: 1.45,
-                fontSize: 13,
+              SizedBox(height: 6),
+              Text(
+                'Subramanya Arcade\n'
+                'Bannerghatta Rd, OLd Gurappanapalya, BTM 1st Stage, Bengaluru, Karnataka 560029, India',
+                style: TextStyle(
+                  color: _subtitleColor,
+                  height: 1.35,
+                  fontSize: addrSize,
+                ),
               ),
-            ),
+            ] else ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Company contact: sales@technodysis.com',
+                  style: TextStyle(
+                    color: _subtitleColor,
+                    fontSize: addrSize,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Office: Bengaluru, Karnataka, India',
+                  style: TextStyle(
+                    color: _subtitleColor,
+                    fontSize: addrSize,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
           ],
-          const SizedBox(height: 16),
-          _gradientButton('Submit', _submitContactForm),
+          SizedBox(height: compact ? 14 : 18),
+          _gradientButton('Submit', _submitContactForm, compact: compact),
         ],
       ),
     );
@@ -294,23 +392,28 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
     TextEditingController controller, {
     TextInputType keyboard = TextInputType.text,
     String? Function(String?)? validator,
+    required bool compact,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboard,
-      style: TextStyle(color: _inputTextColor),
+      style: TextStyle(
+        color: _inputTextColor,
+        fontSize: compact ? 14 : 16,
+      ),
       validator: validator,
-      decoration: _decoration(label),
+      decoration: _decoration(label, compact: compact),
     );
   }
 
-  InputDecoration _decoration(String hintText) {
+  InputDecoration _decoration(String hintText, {required bool compact}) {
+    final vPad = compact ? 11.0 : 14.0;
     return InputDecoration(
       hintText: hintText,
       hintStyle: TextStyle(color: _hintColor),
       filled: true,
       fillColor: _fieldFill,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: vPad),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(color: _enabledBorderColor),
@@ -334,12 +437,16 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
     );
   }
 
-  Widget _gradientButton(String text, Future<void> Function() onTap) {
+  Widget _gradientButton(
+    String text,
+    Future<void> Function() onTap, {
+    required bool compact,
+  }) {
     return GestureDetector(
       onTap: () => unawaited(onTap()),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: EdgeInsets.symmetric(vertical: compact ? 12 : 14),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFF4EB3D3), Color(0xFF52B788)],

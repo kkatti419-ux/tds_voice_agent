@@ -46,9 +46,12 @@ class FooterSection extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isMobile = constraints.maxWidth < 700;
+          final isTablet = constraints.maxWidth < 1200;
 
           return isMobile
               ? _buildMobileLayout(links)
+              : isTablet
+              ? _buildTabletLayout(links)
               : _buildDesktopLayout(links);
         },
       ),
@@ -60,18 +63,34 @@ class FooterSection extends StatelessWidget {
     return Row(
       children: [
         _logo(),
-        const Spacer(),
-        Row(
-          children: links
-              .map(
-                (link) => Padding(
-                  padding: const EdgeInsets.only(left: 24),
-                  child: _footerLink(link),
-                ),
-              )
-              .toList(),
+        const SizedBox(width: 24),
+        Expanded(
+          child: Wrap(
+            spacing: 20,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: links.map(_footerLink).toList(),
+          ),
         ),
-        const Spacer(),
+        const SizedBox(width: 24),
+        _copyright(),
+      ],
+    );
+  }
+
+  Widget _buildTabletLayout(List<String> links) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _logo(),
+        const SizedBox(height: 18),
+        Wrap(
+          spacing: 14,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
+          children: links.map(_footerLink).toList(),
+        ),
+        const SizedBox(height: 16),
         _copyright(),
       ],
     );

@@ -26,8 +26,9 @@ class ComparisonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pad = MediaQuery.sizeOf(context).width < 1100 ? 24.0 : 48.0;
     return Container(
-      padding: const EdgeInsets.all(48),
+      padding: EdgeInsets.all(pad),
       decoration: BoxDecoration(
         color: isOurs
             ? (isDark ? const Color(0xFF071828) : AgniColors.lightOceanDeep)

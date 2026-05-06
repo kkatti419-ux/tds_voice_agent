@@ -79,10 +79,6 @@ import 'package:flutter/material.dart';
 import 'package:tds_voice_agent/core/agni_colors.dart';
 import 'package:tds_voice_agent/theme/app_typography.dart';
 
-/// Fixed height so stat rows stay aligned when titles wrap (e.g. "650+ automations").
-/// Tall enough for two-line value + three-line description inside padded container.
-const double kStatCardHeight = 200;
-
 class StatCard extends StatelessWidget {
   final String value;
   final String description;
@@ -102,65 +98,77 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: kStatCardHeight,
+    final width = MediaQuery.sizeOf(context).width;
+    final veryNarrow = width < 420;
+    final narrow = width < 768;
+
+    final valueFontSize = veryNarrow
+        ? 24.0
+        : narrow
+            ? 28.0
+            : 34.0;
+    final descFontSize = veryNarrow
+        ? 13.0
+        : narrow
+            ? 14.0
+            : 16.0;
+
+    return Container(
       width: double.infinity,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AgniColors.neutralGrey.withOpacity(0.15)),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: AgniColors.black.withOpacity(0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-          ],
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              ShaderMask(
-                blendMode: BlendMode.srcIn,
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [
-                    Color(0xFF5B6CFF),
-                    Color(0xFF7B61FF),
-                    Color(0xFF8E44AD),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ).createShader(bounds),
-                child: Text(
-                  value,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.displaySmall(color: AgniColors.white)
-                      .copyWith(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                description,
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AgniColors.neutralGrey.withOpacity(0.15)),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: AgniColors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+        ],
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ShaderMask(
+              blendMode: BlendMode.srcIn,
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [
+                  Color(0xFF5B6CFF),
+                  Color(0xFF7B61FF),
+                  Color(0xFF8E44AD),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: Text(
+                value,
                 textAlign: TextAlign.center,
-                maxLines: 3,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.bodyMedium(
-                  color: textSecondary,
-                ).copyWith(fontSize: 20, letterSpacing: 0.3),
+                style: AppTypography.displaySmall(color: AgniColors.white)
+                    .copyWith(
+                      fontSize: valueFontSize,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.bodyMedium(
+                color: textSecondary,
+              ).copyWith(fontSize: descFontSize, letterSpacing: 0.3, height: 1.35),
+            ),
+          ],
         ),
       ),
     );

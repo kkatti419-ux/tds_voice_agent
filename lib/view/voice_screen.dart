@@ -17,7 +17,6 @@ import 'package:tds_voice_agent/widgets/stats/stats_section.dart';
 
 import '../core/agni_colors.dart';
 import 'package:tds_voice_agent/data/datasources/local_content_data_source.dart';
-import 'package:tds_voice_agent/model/agni_content.dart';
 import '../theme/app_typography.dart';
 
 class VoiceScreen extends StatelessWidget {
@@ -272,7 +271,7 @@ class _AgniLandingPageState extends State<AgniLandingPage>
                           isDark: isDark,
                         ),
                         // _buildStats(),
-                        StatsSection(isDark: false, stats: content.stats),
+                        StatsSection(isDark: isDark, stats: content.stats),
                         FeaturesSection(content: content, isDark: isDark),
                         ComparisonsSection(
                           comparisons: content.comparisons,
