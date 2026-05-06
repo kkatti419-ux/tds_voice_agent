@@ -19,6 +19,7 @@ class _GlobePageState extends State<GlobePage> {
   static const String _viewType = 'tds-globe-view';
 
   static bool _viewFactoryRegistered = false;
+  static final List<html.IFrameElement> _iframes = <html.IFrameElement>[];
 
   StreamSubscription<html.MessageEvent>? _wheelSub;
 
@@ -38,6 +39,7 @@ class _GlobePageState extends State<GlobePage> {
         ..style.backgroundColor = 'transparent'
         ..width = '100%'
         ..height = '100%';
+      _iframes.add(iframe);
       return iframe;
     });
     _viewFactoryRegistered = true;
@@ -69,5 +71,12 @@ class _GlobePageState extends State<GlobePage> {
   @override
   Widget build(BuildContext context) {
     return const HtmlElementView(viewType: _viewType);
+  }
+}
+
+void setGlobeIframePointerEventsEnabled(bool enabled) {
+  final value = enabled ? 'auto' : 'none';
+  for (final iframe in _GlobePageState._iframes) {
+    iframe.style.pointerEvents = value;
   }
 }

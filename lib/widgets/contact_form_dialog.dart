@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:tds_voice_agent/core/contact_email.dart';
+import 'package:tds_voice_agent/globe/globe_page.dart';
 
 /// Same modal as hero **Talk to an expert** — used from navbar **Contact sales**.
 void showContactFormDialog(
@@ -10,6 +11,7 @@ void showContactFormDialog(
   required bool isDark,
   bool showSalesOfficeAddress = false,
 }) {
+  setGlobeIframePointerEventsEnabled(false);
   showDialog<void>(
     context: context,
     barrierColor: Colors.black.withOpacity(0.6),
@@ -17,7 +19,9 @@ void showContactFormDialog(
       isDark: isDark,
       showSalesOfficeAddress: showSalesOfficeAddress,
     ),
-  );
+  ).whenComplete(() {
+    setGlobeIframePointerEventsEnabled(true);
+  });
 }
 
 class ContactFormDialog extends StatefulWidget {
@@ -84,8 +88,8 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
     final bodyPreview = result.responseBody == null
         ? ''
         : result.responseBody!.length > 512
-            ? '${result.responseBody!.substring(0, 512)}…'
-            : result.responseBody!;
+        ? '${result.responseBody!.substring(0, 512)}…'
+        : result.responseBody!;
     developer.log(
       'composeContactEmail: success=${result.success} '
       'statusCode=${result.statusCode} '
@@ -117,7 +121,9 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
   }
 
   String? _validatePhone(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Phone number is required';
+    if (value == null || value.trim().isEmpty) {
+      return 'Phone number is required';
+    }
     if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value.trim())) {
       return 'Enter valid 10-digit number';
     }
@@ -136,7 +142,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
   Widget build(BuildContext context) {
     final screen = MediaQuery.sizeOf(context);
     final isMobile = screen.width < 600;
-    final compact = isMobile || screen.height < 720;
+    final compact = isMobile || screen.width < 900 || screen.height < 900;
     final dialogWidth = isMobile ? screen.width - 24 : 620.0;
     final viewInsets = MediaQuery.viewInsetsOf(context);
 
@@ -196,7 +202,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
         ),
         SizedBox(height: compact ? 8 : 10),
         Text(
-          'Someone will get in touch with you shortly.',
+          'A member of our sales team will contact you shortly.',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: _subtitleColor,
@@ -346,7 +352,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
               SizedBox(height: 6),
               Text(
                 'Subramanya Arcade\n'
-                'Bannerghatta Rd, OLd Gurappanapalya, BTM 1st Stage, Bengaluru, Karnataka 560029, India',
+                'Bannerghatta Rd, Old Gurappanapalya, BTM 1st Stage, Bengaluru, Karnataka 560029, India',
                 style: TextStyle(
                   color: _subtitleColor,
                   height: 1.35,
@@ -370,7 +376,9 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Office: Bengaluru, Karnataka, India',
+                  'Office: Subramanya Arcade, Bannerghatta Rd, Old '
+                  'Gurappanapalya, BTM 1st Stage, Bengaluru, Karnataka '
+                  '560029, India',
                   style: TextStyle(
                     color: _subtitleColor,
                     fontSize: addrSize,
@@ -397,10 +405,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboard,
-      style: TextStyle(
-        color: _inputTextColor,
-        fontSize: compact ? 14 : 16,
-      ),
+      style: TextStyle(color: _inputTextColor, fontSize: compact ? 14 : 16),
       validator: validator,
       decoration: _decoration(label, compact: compact),
     );
@@ -433,6 +438,10 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+      errorStyle: TextStyle(
+        fontSize: compact ? 11 : 12,
+        height: 1.1,
       ),
     );
   }

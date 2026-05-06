@@ -98,79 +98,90 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final veryNarrow = width < 420;
-    final narrow = width < 768;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth;
+        final veryNarrow = cardWidth < 220;
+        final narrow = cardWidth < 280;
 
-    final valueFontSize = veryNarrow
-        ? 24.0
-        : narrow
-            ? 28.0
-            : 34.0;
-    final descFontSize = veryNarrow
-        ? 13.0
-        : narrow
-            ? 14.0
-            : 16.0;
+        final valueFontSize = veryNarrow
+            ? 18.0
+            : narrow
+                ? 22.0
+                : 30.0;
+        final descFontSize = veryNarrow
+            ? 11.0
+            : narrow
+                ? 12.0
+                : 14.0;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AgniColors.neutralGrey.withOpacity(0.15)),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: AgniColors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            vertical: narrow ? 12 : 16,
+            horizontal: narrow ? 12 : 16,
+          ),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AgniColors.neutralGrey.withOpacity(0.15)),
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: AgniColors.black.withOpacity(0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+            ],
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ShaderMask(
+                  blendMode: BlendMode.srcIn,
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [
+                      Color(0xFF5B6CFF),
+                      Color(0xFF7B61FF),
+                      Color(0xFF8E44AD),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: Text(
+                    value,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.displaySmall(color: AgniColors.white)
+                        .copyWith(
+                          fontSize: valueFontSize,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
+                        ),
+                  ),
+                ),
+                SizedBox(height: narrow ? 2 : 4),
+                Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  maxLines: narrow ? 1 : 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodyMedium(
+                    color: textSecondary,
+                  ).copyWith(
+                    fontSize: descFontSize,
+                    letterSpacing: 0.2,
+                    height: 1.25,
+                  ),
+                ),
+              ],
             ),
-        ],
-      ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ShaderMask(
-              blendMode: BlendMode.srcIn,
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [
-                  Color(0xFF5B6CFF),
-                  Color(0xFF7B61FF),
-                  Color(0xFF8E44AD),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(bounds),
-              child: Text(
-                value,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.displaySmall(color: AgniColors.white)
-                    .copyWith(
-                      fontSize: valueFontSize,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.bodyMedium(
-                color: textSecondary,
-              ).copyWith(fontSize: descFontSize, letterSpacing: 0.3, height: 1.35),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

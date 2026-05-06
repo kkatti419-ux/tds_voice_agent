@@ -12,3 +12,5 @@ class GlobePage extends StatelessWidget {
     );
   }
 }
+
+void setGlobeIframePointerEventsEnabled(bool enabled) {}
